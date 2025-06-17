@@ -1,19 +1,21 @@
 import React, { useState } from 'react';
-import { Sword, Users, Package, Map, Settings, Crown } from 'lucide-react';
+import { Sword, Users, Package, Map, Settings, Crown, Home } from 'lucide-react';
 import Header from './components/Header';
 import Navigation from './components/Navigation';
 import TeamsPanel from './components/TeamsPanel';
 import QuestsPanel from './components/QuestsPanel';
 import InventoryPanel from './components/InventoryPanel';
 import OverviewPanel from './components/OverviewPanel';
+import GuildPanel from './components/GuildPanel';
 
-type ActivePanel = 'overview' | 'teams' | 'quests' | 'inventory' | 'settings';
+type ActivePanel = 'overview' | 'guild' | 'teams' | 'quests' | 'inventory' | 'settings';
 
 function App() {
   const [activePanel, setActivePanel] = useState<ActivePanel>('overview');
 
   const navigationItems = [
     { id: 'overview' as const, label: 'Vue d\'ensemble', icon: Crown },
+    { id: 'guild' as const, label: 'Guilde', icon: Home },
     { id: 'teams' as const, label: 'Équipes', icon: Users },
     { id: 'quests' as const, label: 'Quêtes', icon: Map },
     { id: 'inventory' as const, label: 'Inventaire', icon: Package },
@@ -24,6 +26,8 @@ function App() {
     switch (activePanel) {
       case 'overview':
         return <OverviewPanel />;
+      case 'guild':
+        return <GuildPanel />;
       case 'teams':
         return <TeamsPanel />;
       case 'quests':

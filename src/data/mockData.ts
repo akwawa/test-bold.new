@@ -1,4 +1,4 @@
-import { Character, Team, Quest, ActiveQuest } from '../types';
+import { Character, Team, Quest, ActiveQuest, Building, Guild } from '../types';
 
 export const mockCharacters: Character[] = [
   {
@@ -125,3 +125,122 @@ export const mockActiveQuests: ActiveQuest[] = [
     timeRemaining: 30 // 30min restantes
   }
 ];
+
+export const mockBuildings: Building[] = [
+  {
+    id: 1,
+    name: 'Taverne',
+    type: 'tavern',
+    level: 3,
+    maxLevel: 5,
+    description: 'Le cœur de votre guilde où les aventuriers se reposent et récupèrent.',
+    benefits: [
+      'Récupération +15% plus rapide',
+      'Capacité: 12 aventuriers',
+      'Bonus moral: +10%'
+    ],
+    upgradeCost: 800,
+    upgradeTime: 120,
+    isUpgrading: false,
+    icon: '🍺'
+  },
+  {
+    id: 2,
+    name: 'Tableau des Quêtes',
+    type: 'quest_board',
+    level: 2,
+    maxLevel: 5,
+    description: 'Affiche les quêtes disponibles et permet de mieux les organiser.',
+    benefits: [
+      '3 quêtes simultanées max',
+      'Bonus récompenses: +5%',
+      'Quêtes rares disponibles'
+    ],
+    upgradeCost: 600,
+    upgradeTime: 90,
+    isUpgrading: true,
+    upgradeStartTime: new Date(Date.now() - 30 * 60 * 1000),
+    icon: '📋'
+  },
+  {
+    id: 3,
+    name: 'Armurerie',
+    type: 'armory',
+    level: 2,
+    maxLevel: 5,
+    description: 'Forge et répare les équipements de vos aventuriers.',
+    benefits: [
+      'Réparation automatique',
+      'Bonus équipement: +8%',
+      'Création d\'objets rares'
+    ],
+    upgradeCost: 1000,
+    upgradeTime: 150,
+    isUpgrading: false,
+    icon: '⚒️'
+  },
+  {
+    id: 4,
+    name: 'Bibliothèque',
+    type: 'library',
+    level: 1,
+    maxLevel: 5,
+    description: 'Centre de recherche et d\'apprentissage pour vos mages.',
+    benefits: [
+      'Bonus XP magie: +10%',
+      'Recherche de sorts',
+      'Formation accélérée'
+    ],
+    upgradeCost: 500,
+    upgradeTime: 60,
+    isUpgrading: false,
+    icon: '📚'
+  },
+  {
+    id: 5,
+    name: 'Terrain d\'Entraînement',
+    type: 'training_ground',
+    level: 2,
+    maxLevel: 5,
+    description: 'Permet à vos aventuriers de s\'entraîner et gagner de l\'expérience.',
+    benefits: [
+      'Entraînement passif',
+      'Bonus XP combat: +12%',
+      'Amélioration des stats'
+    ],
+    upgradeCost: 750,
+    upgradeTime: 100,
+    isUpgrading: false,
+    icon: '🎯'
+  },
+  {
+    id: 6,
+    name: 'Infirmerie',
+    type: 'infirmary',
+    level: 1,
+    maxLevel: 5,
+    description: 'Soigne les blessures et maladies de vos aventuriers.',
+    benefits: [
+      'Soins automatiques',
+      'Résistance aux maladies',
+      'Récupération rapide'
+    ],
+    upgradeCost: 400,
+    upgradeTime: 80,
+    isUpgrading: false,
+    icon: '🏥'
+  }
+];
+
+export const mockGuild: Guild = {
+  id: 1,
+  name: 'Les Gardiens de l\'Aube',
+  level: 4,
+  experience: 2850,
+  reputation: 1200,
+  gold: 1250,
+  gems: 45,
+  buildings: mockBuildings,
+  maxMembers: 15,
+  currentMembers: 6
+};

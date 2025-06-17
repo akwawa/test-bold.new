@@ -46,3 +46,31 @@ export interface ActiveQuest extends Quest {
   progress: number;
   timeRemaining: number; // en minutes
 }
+
+export interface Building {
+  id: number;
+  name: string;
+  type: 'tavern' | 'quest_board' | 'armory' | 'library' | 'training_ground' | 'infirmary';
+  level: number;
+  maxLevel: number;
+  description: string;
+  benefits: string[];
+  upgradeCost: number;
+  upgradeTime: number; // en minutes
+  isUpgrading: boolean;
+  upgradeStartTime?: Date;
+  icon: string;
+}
+
+export interface Guild {
+  id: number;
+  name: string;
+  level: number;
+  experience: number;
+  reputation: number;
+  gold: number;
+  gems: number;
+  buildings: Building[];
+  maxMembers: number;
+  currentMembers: number;
+}

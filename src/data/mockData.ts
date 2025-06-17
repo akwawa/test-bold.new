@@ -1,4 +1,100 @@
-import { Character, Team, Quest, ActiveQuest, Building, Guild } from '../types';
+import { Character, Team, Quest, ActiveQuest, Building, Guild, Equipment, Skill } from '../types';
+
+const mockEquipments: Equipment[] = [
+  {
+    id: 1,
+    name: 'Épée de Flammes',
+    type: 'weapon',
+    rarity: 'rare',
+    stats: { strength: 8, vitality: 2 },
+    description: 'Une épée enchantée qui brûle les ennemis au contact.',
+    icon: '🔥'
+  },
+  {
+    id: 2,
+    name: 'Arc Elfique',
+    type: 'weapon',
+    rarity: 'epic',
+    stats: { agility: 12, intelligence: 3 },
+    description: 'Un arc léger et précis forgé par les elfes.',
+    icon: '🏹'
+  },
+  {
+    id: 3,
+    name: 'Bâton de Cristal',
+    type: 'weapon',
+    rarity: 'rare',
+    stats: { intelligence: 10, vitality: 4 },
+    description: 'Un bâton magique amplifiant les sorts.',
+    icon: '🔮'
+  },
+  {
+    id: 4,
+    name: 'Armure de Plates',
+    type: 'armor',
+    rarity: 'rare',
+    stats: { strength: 4, vitality: 8 },
+    description: 'Une armure lourde offrant une excellente protection.',
+    icon: '🛡️'
+  },
+  {
+    id: 5,
+    name: 'Robe de Mage',
+    type: 'armor',
+    rarity: 'common',
+    stats: { intelligence: 6, agility: 2 },
+    description: 'Une robe légère favorisant la concentration magique.',
+    icon: '👘'
+  }
+];
+
+const mockSkills: Skill[] = [
+  {
+    id: 1,
+    name: 'Frappe Puissante',
+    level: 3,
+    maxLevel: 5,
+    description: 'Augmente les dégâts des attaques physiques.',
+    type: 'combat',
+    icon: '⚔️'
+  },
+  {
+    id: 2,
+    name: 'Tir de Précision',
+    level: 4,
+    maxLevel: 5,
+    description: 'Améliore la précision des attaques à distance.',
+    type: 'combat',
+    icon: '🎯'
+  },
+  {
+    id: 3,
+    name: 'Boule de Feu',
+    level: 5,
+    maxLevel: 5,
+    description: 'Lance une boule de feu dévastatrice.',
+    type: 'magic',
+    icon: '🔥'
+  },
+  {
+    id: 4,
+    name: 'Soins',
+    level: 2,
+    maxLevel: 5,
+    description: 'Restaure la santé de l\'utilisateur ou d\'un allié.',
+    type: 'magic',
+    icon: '💚'
+  },
+  {
+    id: 5,
+    name: 'Furtivité',
+    level: 3,
+    maxLevel: 5,
+    description: 'Permet de se déplacer sans être détecté.',
+    type: 'utility',
+    icon: '👤'
+  }
+];
 
 export const mockCharacters: Character[] = [
   {
@@ -9,7 +105,20 @@ export const mockCharacters: Character[] = [
     stats: { strength: 18, agility: 12, intelligence: 8, vitality: 15 },
     experience: 1250,
     avatar: '⚔️',
-    isAvailable: false
+    isAvailable: false,
+    health: 85,
+    maxHealth: 100,
+    mana: 20,
+    maxMana: 30,
+    equipment: {
+      weapon: mockEquipments[0],
+      armor: mockEquipments[3]
+    },
+    skills: [mockSkills[0], mockSkills[3]],
+    biography: 'Ancienne garde royale, Aria a rejoint la guilde après avoir sauvé un village des bandits. Sa loyauté et son courage sont légendaires.',
+    joinDate: new Date('2024-01-15'),
+    questsCompleted: 23,
+    totalEarnings: 4500
   },
   {
     id: 2,
@@ -19,7 +128,20 @@ export const mockCharacters: Character[] = [
     stats: { strength: 10, agility: 20, intelligence: 14, vitality: 12 },
     experience: 980,
     avatar: '🏹',
-    isAvailable: false
+    isAvailable: false,
+    health: 78,
+    maxHealth: 85,
+    mana: 45,
+    maxMana: 50,
+    equipment: {
+      weapon: mockEquipments[1],
+      armor: mockEquipments[4]
+    },
+    skills: [mockSkills[1], mockSkills[4]],
+    biography: 'Élevé dans les forêts du Nord, Zephyr maîtrise l\'art de la traque et du tir à l\'arc. Il préfère la solitude mais reste fidèle à ses compagnons.',
+    joinDate: new Date('2024-02-03'),
+    questsCompleted: 18,
+    totalEarnings: 3200
   },
   {
     id: 3,
@@ -29,7 +151,20 @@ export const mockCharacters: Character[] = [
     stats: { strength: 6, agility: 10, intelligence: 22, vitality: 10 },
     experience: 1580,
     avatar: '🔮',
-    isAvailable: false
+    isAvailable: false,
+    health: 65,
+    maxHealth: 70,
+    mana: 95,
+    maxMana: 100,
+    equipment: {
+      weapon: mockEquipments[2],
+      armor: mockEquipments[4]
+    },
+    skills: [mockSkills[2], mockSkills[3]],
+    biography: 'Diplômée de l\'Académie de Magie de Crystalheim, Lyra est une prodige des arts arcaniques. Elle cherche constamment à perfectionner ses sorts.',
+    joinDate: new Date('2023-12-10'),
+    questsCompleted: 31,
+    totalEarnings: 6800
   },
   {
     id: 4,
@@ -39,7 +174,20 @@ export const mockCharacters: Character[] = [
     stats: { strength: 16, agility: 8, intelligence: 12, vitality: 20 },
     experience: 1100,
     avatar: '🛡️',
-    isAvailable: false
+    isAvailable: false,
+    health: 100,
+    maxHealth: 120,
+    mana: 40,
+    maxMana: 60,
+    equipment: {
+      weapon: mockEquipments[0],
+      armor: mockEquipments[3]
+    },
+    skills: [mockSkills[0], mockSkills[3]],
+    biography: 'Ancien prêtre-guerrier du Temple de la Lumière, Thorin protège les innocents avec une détermination inébranlable.',
+    joinDate: new Date('2024-01-28'),
+    questsCompleted: 19,
+    totalEarnings: 3800
   },
   {
     id: 5,
@@ -49,7 +197,19 @@ export const mockCharacters: Character[] = [
     stats: { strength: 8, agility: 14, intelligence: 18, vitality: 16 },
     experience: 750,
     avatar: '🌿',
-    isAvailable: true
+    isAvailable: true,
+    health: 90,
+    maxHealth: 95,
+    mana: 70,
+    maxMana: 80,
+    equipment: {
+      weapon: mockEquipments[2]
+    },
+    skills: [mockSkills[3], mockSkills[4]],
+    biography: 'Gardien de la forêt ancienne, Sage communique avec la nature et utilise ses pouvoirs pour guérir et protéger.',
+    joinDate: new Date('2024-03-12'),
+    questsCompleted: 12,
+    totalEarnings: 2100
   },
   {
     id: 6,
@@ -59,7 +219,19 @@ export const mockCharacters: Character[] = [
     stats: { strength: 12, agility: 22, intelligence: 16, vitality: 8 },
     experience: 920,
     avatar: '🗡️',
-    isAvailable: true
+    isAvailable: true,
+    health: 60,
+    maxHealth: 75,
+    mana: 35,
+    maxMana: 45,
+    equipment: {
+      weapon: mockEquipments[1]
+    },
+    skills: [mockSkills[1], mockSkills[4]],
+    biography: 'Ancien membre d\'une guilde d\'assassins, Raven a choisi la voie de la rédemption en rejoignant les Gardiens de l\'Aube.',
+    joinDate: new Date('2024-02-20'),
+    questsCompleted: 15,
+    totalEarnings: 2800
   }
 ];
 

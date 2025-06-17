@@ -12,6 +12,45 @@ export interface Character {
   experience: number;
   avatar: string;
   isAvailable: boolean;
+  health: number;
+  maxHealth: number;
+  mana: number;
+  maxMana: number;
+  equipment: {
+    weapon?: Equipment;
+    armor?: Equipment;
+    accessory?: Equipment;
+  };
+  skills: Skill[];
+  biography: string;
+  joinDate: Date;
+  questsCompleted: number;
+  totalEarnings: number;
+}
+
+export interface Equipment {
+  id: number;
+  name: string;
+  type: 'weapon' | 'armor' | 'accessory';
+  rarity: 'common' | 'rare' | 'epic' | 'legendary';
+  stats: {
+    strength?: number;
+    agility?: number;
+    intelligence?: number;
+    vitality?: number;
+  };
+  description: string;
+  icon: string;
+}
+
+export interface Skill {
+  id: number;
+  name: string;
+  level: number;
+  maxLevel: number;
+  description: string;
+  type: 'combat' | 'magic' | 'utility';
+  icon: string;
 }
 
 export interface Team {

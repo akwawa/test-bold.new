@@ -4,7 +4,11 @@ import { mockActiveQuests, mockCharacters } from '../data/mockData';
 import ActiveQuestCard from './ActiveQuestCard';
 import CharacterCard from './CharacterCard';
 
-const OverviewPanel: React.FC = () => {
+interface OverviewPanelProps {
+  onViewCharacterDetails: (characterId: number) => void;
+}
+
+const OverviewPanel: React.FC<OverviewPanelProps> = ({ onViewCharacterDetails }) => {
   const availableCharacters = mockCharacters.filter(char => char.isAvailable);
   const busyCharacters = mockCharacters.filter(char => !char.isAvailable);
 
@@ -82,7 +86,11 @@ const OverviewPanel: React.FC = () => {
           {availableCharacters.length > 0 ? (
             <div className="space-y-3">
               {availableCharacters.map((character) => (
-                <CharacterCard key={character.id} character={character} />
+                <CharacterCard 
+                  key={character.id} 
+                  character={character} 
+                  onViewDetails={onViewCharacterDetails}
+                />
               ))}
             </div>
           ) : (

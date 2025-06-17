@@ -4,9 +4,10 @@ import { Character } from '../types';
 
 interface CharacterCardProps {
   character: Character;
+  onViewDetails?: (characterId: number) => void;
 }
 
-const CharacterCard: React.FC<CharacterCardProps> = ({ character }) => {
+const CharacterCard: React.FC<CharacterCardProps> = ({ character, onViewDetails }) => {
   const getClassColor = (characterClass: string): string => {
     switch (characterClass) {
       case 'Guerrière':
@@ -111,7 +112,10 @@ const CharacterCard: React.FC<CharacterCardProps> = ({ character }) => {
         >
           Assigner
         </button>
-        <button className="bg-stone-100 hover:bg-stone-200 text-stone-700 py-2 px-3 rounded text-xs font-medium transition-colors">
+        <button 
+          onClick={() => onViewDetails?.(character.id)}
+          className="bg-stone-100 hover:bg-stone-200 text-stone-700 py-2 px-3 rounded text-xs font-medium transition-colors"
+        >
           Détails
         </button>
       </div>

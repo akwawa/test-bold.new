@@ -7,11 +7,13 @@ import QuestsPanel from './components/QuestsPanel';
 import InventoryPanel from './components/InventoryPanel';
 import OverviewPanel from './components/OverviewPanel';
 import GuildPanel from './components/GuildPanel';
+import CharacterDetailsPanel from './components/CharacterDetailsPanel';
 
-type ActivePanel = 'overview' | 'guild' | 'teams' | 'quests' | 'inventory' | 'settings';
+type ActivePanel = 'overview' | 'guild' | 'teams' | 'quests' | 'inventory' | 'settings' | 'character-details';
 
 function App() {
   const [activePanel, setActivePanel] = useState<ActivePanel>('overview');
+  const [selectedCharacterId, setSelectedCharacterId] = useState<number | undefined>();
 
   const navigationItems = [
     { id: 'overview' as const, label: 'Vue d\'ensemble', icon: Crown },
@@ -22,10 +24,20 @@ function App() {
     { id: 'settings' as const, label: 'Paramètres', icon: Settings },
   ];
 
+  const handleViewCharacterDetails = (characterId: number) => {
+    setSelectedCharacterId(characterId);
+    setActivePanel('character-details');
+  };
+
+  const handleBackFromCharacterDetails = () => {
+    setActivePanel('overview');
+    setSelectedCharacterId(undefined);
+  };
+
   const renderActivePanel = () => {
     switch (activePanel) {
       case 'overview':
-        return <OverviewPanel />;
+        return <OverviewPanel onViewCharacterDetails={handleViewCharacterDetails} />;
       case 'guild':
         return <GuildPanel />;
       case 'teams':
@@ -34,10 +46,17 @@ function App() {
         return <QuestsPanel />;
       case 'inventory':
         return <InventoryPanel />;
+      case 'character-details':
+        return (
+          <CharacterDetailsPanel 
+            characterId={selectedCharacterId}
+            onBack={handleBackFromCharacterDetails}
+          />
+        );
       case 'settings':
         return <div className="p-6"><h2 className="text-2xl font-bold text-stone-800">Paramètres</h2><p className="text-stone-600 mt-2">Fonctionnalité à venir...</p></div>;
       default:
-        return <OverviewPanel />;
+        return <OverviewPanel onViewCharacterDetails={handleViewCharacterDetails} />;
     }
   };
 

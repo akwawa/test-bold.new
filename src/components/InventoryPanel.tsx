@@ -1,5 +1,5 @@
 import React from 'react';
-import { Package, Sword, Shield, Gem, Scroll, Potion } from 'lucide-react';
+import { Package, Sword, Shield, Gem, Scroll, Option as Potion } from 'lucide-react';
 
 const InventoryPanel: React.FC = () => {
   const inventory = [

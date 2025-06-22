@@ -12,7 +12,7 @@ const GuildPanel: React.FC = () => {
   };
 
   const getReputationLevel = (reputation: number): string => {
-    if (reputation < 500) return 'Novice';
+    if (reputation < 500) return 'Inconnue';
     if (reputation < 1000) return 'Reconnue';
     if (reputation < 2000) return 'Respectée';
     if (reputation < 3000) return 'Célèbre';
@@ -30,8 +30,8 @@ const GuildPanel: React.FC = () => {
   return (
     <div className="p-6">
       <div className="mb-6">
-        <h2 className="text-3xl font-bold text-stone-800 font-fantasy">Ma Guilde</h2>
-        <p className="text-stone-600 mt-2">Gérez et améliorez votre guilde d'aventuriers</p>
+        <h2 className="text-3xl font-bold text-stone-800 font-fantasy">Ma Compagnie d'Aventuriers</h2>
+        <p className="text-stone-600 mt-2">Gérez et améliorez votre compagnie d'aventuriers</p>
       </div>
 
       {/* Informations de la guilde */}
@@ -70,13 +70,13 @@ const GuildPanel: React.FC = () => {
           <div className="bg-fantasy-700/50 rounded-lg p-3 text-center">
             <Users className="h-6 w-6 mx-auto mb-1 text-fantasy-200" />
             <div className="text-lg font-bold">{guild.currentMembers}/{guild.maxMembers}</div>
-            <div className="text-fantasy-300 text-xs">Membres</div>
+            <div className="text-fantasy-300 text-xs">Aventuriers</div>
           </div>
           
           <div className="bg-fantasy-700/50 rounded-lg p-3 text-center">
             <Coins className="h-6 w-6 mx-auto mb-1 text-yellow-400" />
             <div className="text-lg font-bold">{guild.gold}</div>
-            <div className="text-fantasy-300 text-xs">Or</div>
+            <div className="text-fantasy-300 text-xs">Pièces d'Or</div>
           </div>
           
           <div className="bg-fantasy-700/50 rounded-lg p-3 text-center">
@@ -111,9 +111,9 @@ const GuildPanel: React.FC = () => {
         <div className="bg-white rounded-xl shadow-lg p-6 border border-stone-200">
           <div className="flex items-center justify-between">
             <div>
-              <h4 className="text-lg font-bold text-stone-800">Efficacité</h4>
+              <h4 className="text-lg font-bold text-stone-800">Taux de Réussite</h4>
               <p className="text-2xl font-bold text-green-600">87%</p>
-              <p className="text-stone-500 text-sm">Taux de réussite des quêtes</p>
+              <p className="text-stone-500 text-sm">Quêtes réussies</p>
             </div>
             <TrendingUp className="h-12 w-12 text-green-500" />
           </div>
@@ -124,7 +124,7 @@ const GuildPanel: React.FC = () => {
             <div>
               <h4 className="text-lg font-bold text-stone-800">Revenus</h4>
               <p className="text-2xl font-bold text-yellow-600">2,450</p>
-              <p className="text-stone-500 text-sm">Or gagné cette semaine</p>
+              <p className="text-stone-500 text-sm">Po gagnées cette semaine</p>
             </div>
             <Coins className="h-12 w-12 text-yellow-500" />
           </div>
@@ -133,7 +133,7 @@ const GuildPanel: React.FC = () => {
         <div className="bg-white rounded-xl shadow-lg p-6 border border-stone-200">
           <div className="flex items-center justify-between">
             <div>
-              <h4 className="text-lg font-bold text-stone-800">Activité</h4>
+              <h4 className="text-lg font-bold text-stone-800">Contrats</h4>
               <p className="text-2xl font-bold text-blue-600">12</p>
               <p className="text-stone-500 text-sm">Quêtes terminées</p>
             </div>
@@ -144,7 +144,7 @@ const GuildPanel: React.FC = () => {
 
       {/* Infrastructures */}
       <div>
-        <h3 className="text-2xl font-bold text-stone-800 mb-6">Infrastructures de la Guilde</h3>
+        <h3 className="text-2xl font-bold text-stone-800 mb-6">Infrastructures de la Compagnie</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {guild.buildings.map((building) => (
             <BuildingCard
@@ -158,19 +158,19 @@ const GuildPanel: React.FC = () => {
 
       {/* Conseils d'amélioration */}
       <div className="mt-8 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-200">
-        <h4 className="text-lg font-bold text-blue-800 mb-3">💡 Conseils d'amélioration</h4>
+        <h4 className="text-lg font-bold text-blue-800 mb-3">💡 Conseils du Maître de Guilde</h4>
         <ul className="space-y-2 text-blue-700">
           <li className="flex items-start space-x-2">
             <span className="text-blue-500 mt-1">•</span>
-            <span className="text-sm">Améliorez la Taverne pour augmenter la capacité de votre guilde</span>
+            <span className="text-sm">Améliorez la Taverne du Dragon Doré pour accueillir plus d'aventuriers</span>
           </li>
           <li className="flex items-start space-x-2">
             <span className="text-blue-500 mt-1">•</span>
-            <span className="text-sm">Le Tableau des Quêtes en cours d'amélioration permettra plus de quêtes simultanées</span>
+            <span className="text-sm">Le Tableau des Contrats en cours d'amélioration permettra plus de quêtes simultanées</span>
           </li>
           <li className="flex items-start space-x-2">
             <span className="text-blue-500 mt-1">•</span>
-            <span className="text-sm">Construisez une Infirmerie de niveau supérieur pour réduire les temps de récupération</span>
+            <span className="text-sm">Construisez un Temple de Soins pour réduire les temps de récupération après les combats</span>
           </li>
         </ul>
       </div>

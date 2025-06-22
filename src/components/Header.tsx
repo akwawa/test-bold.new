@@ -11,8 +11,8 @@ const Header: React.FC = () => {
               <Sword className="h-8 w-8 text-fantasy-100" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold font-fantasy">Maître des Quêtes</h1>
-              <p className="text-fantasy-200 text-sm">Gérez vos équipes d'aventuriers</p>
+              <h1 className="text-2xl font-bold font-fantasy">Compagnie de l'Épée et du Bouclier</h1>
+              <p className="text-fantasy-200 text-sm">Maîtres des Donjons et Aventuriers</p>
             </div>
           </div>
           
@@ -20,7 +20,7 @@ const Header: React.FC = () => {
             <div className="flex items-center space-x-2 bg-fantasy-700/50 px-3 py-2 rounded-lg">
               <Coins className="h-5 w-5 text-yellow-400" />
               <span className="font-semibold">1,250</span>
-              <span className="text-fantasy-200 text-sm">Or</span>
+              <span className="text-fantasy-200 text-sm">Po</span>
             </div>
             
             <div className="flex items-center space-x-2 bg-fantasy-700/50 px-3 py-2 rounded-lg">

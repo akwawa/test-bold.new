@@ -160,6 +160,7 @@ const GuildPanel: React.FC<GuildPanelProps> = ({ gameData }) => {
             <BuildingCard
               key={building.id}
               building={building}
+              currentTotalCycles={gameData.cycle.totalCycles}
               onUpgrade={handleUpgradeBuilding}
             />
           ))}

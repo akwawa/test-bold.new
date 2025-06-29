@@ -4,34 +4,35 @@ import { Building } from '../types';
 
 interface BuildingCardProps {
   building: Building;
+  currentTotalCycles: number;
   onUpgrade: (buildingId: number) => void;
 }
 
-const BuildingCard: React.FC<BuildingCardProps> = ({ building, onUpgrade }) => {
-  const formatTime = (minutes: number): string => {
-    const hours = Math.floor(minutes / 60);
-    const mins = minutes % 60;
-    if (hours > 0) {
-      return `${hours}h ${mins}min`;
+const BuildingCard: React.FC<BuildingCardProps> = ({ building, currentTotalCycles, onUpgrade }) => {
+  const formatCycleTime = (cycles: number): string => {
+    const days = Math.floor(cycles / 24);
+    const hours = cycles % 24;
+    if (days > 0) {
+      return `${days}j ${hours}h`;
     }
-    return `${mins}min`;
+    return `${hours}h`;
   };
 
   const getUpgradeProgress = (): number => {
-    if (!building.isUpgrading || !building.upgradeStartTime) return 0;
+    if (!building.isUpgrading || building.upgradeStartCycle === undefined) return 0;
     
-    const elapsed = Date.now() - building.upgradeStartTime.getTime();
-    const totalTime = building.upgradeTime * 60 * 1000; // Convert to milliseconds
+    const elapsed = currentTotalCycles - building.upgradeStartCycle;
+    const totalTime = building.upgradeTime; // Already in cycles
     return Math.min((elapsed / totalTime) * 100, 100);
   };
 
   const getRemainingUpgradeTime = (): number => {
-    if (!building.isUpgrading || !building.upgradeStartTime) return 0;
+    if (!building.isUpgrading || building.upgradeStartCycle === undefined) return 0;
     
-    const elapsed = Date.now() - building.upgradeStartTime.getTime();
-    const totalTime = building.upgradeTime * 60 * 1000;
+    const elapsed = currentTotalCycles - building.upgradeStartCycle;
+    const totalTime = building.upgradeTime; // Already in cycles
     const remaining = Math.max(totalTime - elapsed, 0);
-    return Math.ceil(remaining / (60 * 1000)); // Convert to minutes
+    return Math.ceil(remaining); // Return remaining cycles
   };
 
   const getBuildingTypeColor = (type: string): string => {
@@ -76,7 +77,7 @@ const BuildingCard: React.FC<BuildingCardProps> = ({ building, onUpgrade }) => {
           {building.isUpgrading && (
             <div className="text-right">
               <div className="text-xs opacity-90">Amélioration</div>
-              <div className="font-semibold">{formatTime(remainingTime)}</div>
+              <div className="font-semibold">{formatCycleTime(remainingTime)}</div>
             </div>
           )}
         </div>
@@ -118,7 +119,7 @@ const BuildingCard: React.FC<BuildingCardProps> = ({ building, onUpgrade }) => {
               <Coins className="h-4 w-4 text-yellow-500" />
               <span>{building.upgradeCost} or</span>
               <Clock className="h-4 w-4 text-stone-500" />
-              <span>{formatTime(building.upgradeTime)}</span>
+              <span>{formatCycleTime(building.upgradeTime)}</span>
             </div>
           ) : (
             <span className="text-sm font-medium text-green-600">Niveau maximum</span>

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Users, Star, Sword, X, Check, AlertCircle, Crown } from 'lucide-react';
+import { Plus, Users, Star, Edit, X, Check, AlertCircle, Crown } from 'lucide-react';
 import { GameSave, Character, Team } from '../types';
 
 interface TeamsPanelProps {
@@ -9,6 +9,8 @@ interface TeamsPanelProps {
 
 const TeamsPanel: React.FC<TeamsPanelProps> = ({ gameData, onUpdateGameData }) => {
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingTeam, setEditingTeam] = useState<Team | null>(null);
   const [newTeamName, setNewTeamName] = useState('');
   const [selectedCharacters, setSelectedCharacters] = useState<Character[]>([]);
   const [teamSpecialty, setTeamSpecialty] = useState('');
@@ -74,12 +76,63 @@ const TeamsPanel: React.FC<TeamsPanelProps> = ({ gameData, onUpdateGameData }) =
     setShowCreateModal(false);
   };
 
+  const handleEditTeam = (team: Team) => {
+    setEditingTeam(team);
+    setNewTeamName(team.name);
+    setSelectedCharacters(team.members);
+    setTeamSpecialty(team.specialty);
+    setShowEditModal(true);
+  };
+
+  const handleUpdateTeam = () => {
+    if (!editingTeam || !newTeamName.trim() || selectedCharacters.length < 2) return;
+
+    const updatedTeam: Team = {
+      ...editingTeam,
+      name: newTeamName.trim(),
+      level: Math.floor(selectedCharacters.reduce((sum, char) => sum + char.level, 0) / selectedCharacters.length),
+      members: selectedCharacters,
+      specialty: teamSpecialty
+    };
+
+    const updatedGameData = {
+      ...gameData,
+      teams: gameData.teams.map(team => 
+        team.id === editingTeam.id ? updatedTeam : team
+      )
+    };
+
+    if (onUpdateGameData) {
+      onUpdateGameData(updatedGameData);
+    }
+
+    // Reset form
+    setEditingTeam(null);
+    setNewTeamName('');
+    setSelectedCharacters([]);
+    setTeamSpecialty('');
+    setShowEditModal(false);
+  };
+
   const toggleCharacterSelection = (character: Character) => {
     if (selectedCharacters.find(char => char.id === character.id)) {
       setSelectedCharacters(selectedCharacters.filter(char => char.id !== character.id));
     } else if (selectedCharacters.length < maxTeamSize) {
       setSelectedCharacters([...selectedCharacters, character]);
     }
+  };
+
+  const getAvailableCharactersForEdit = (team: Team): Character[] => {
+    // Pour l'édition, inclure les personnages de l'équipe actuelle + les personnages disponibles
+    const teamMemberIds = team.members.map(member => member.id);
+    const availableForEdit = gameData.characters.filter(char => 
+      char.isAvailable || teamMemberIds.includes(char.id)
+    ).filter(char => 
+      !gameData.teams.some(otherTeam => 
+        otherTeam.id !== team.id && otherTeam.members.some(member => member.id === char.id)
+      )
+    );
+    return availableForEdit;
   };
 
   const getClassColor = (characterClass: string): string => {
@@ -148,6 +201,222 @@ const TeamsPanel: React.FC<TeamsPanelProps> = ({ gameData, onUpdateGameData }) =
   };
 
   const synergy = getTeamSynergy(selectedCharacters);
+
+  const renderTeamModal = (isEdit: boolean = false) => {
+    const currentAvailableCharacters = isEdit && editingTeam 
+      ? getAvailableCharactersForEdit(editingTeam)
+      : availableCharacters;
+
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-2xl font-bold text-stone-800">
+                {isEdit ? `Modifier l'équipe "${editingTeam?.name}"` : 'Créer une nouvelle équipe'}
+              </h3>
+              <button
+                onClick={() => {
+                  if (isEdit) {
+                    setShowEditModal(false);
+                    setEditingTeam(null);
+                  } else {
+                    setShowCreateModal(false);
+                  }
+                  setNewTeamName('');
+                  setSelectedCharacters([]);
+                  setTeamSpecialty('');
+                }}
+                className="text-stone-400 hover:text-stone-600 transition-colors"
+              >
+                <X className="h-6 w-6" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Configuration de l'équipe */}
+              <div>
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-stone-700 mb-2">
+                    Nom de l'équipe
+                  </label>
+                  <input
+                    type="text"
+                    value={newTeamName}
+                    onChange={(e) => setNewTeamName(e.target.value)}
+                    placeholder="Ex: Les Gardiens de la Lumière"
+                    className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-fantasy-500 focus:border-fantasy-500"
+                  />
+                </div>
+
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-stone-700 mb-2">
+                    Spécialité
+                  </label>
+                  <select
+                    value={teamSpecialty}
+                    onChange={(e) => setTeamSpecialty(e.target.value)}
+                    className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-fantasy-500 focus:border-fantasy-500"
+                  >
+                    {specialties.map((specialty) => (
+                      <option key={specialty} value={specialty}>
+                        {specialty}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Informations sur l'équipe */}
+                <div className="bg-stone-50 rounded-lg p-4 mb-4">
+                  <h4 className="font-bold text-stone-800 mb-2">Informations de l'équipe</h4>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span>Membres sélectionnés :</span>
+                      <span className={selectedCharacters.length >= 2 ? 'text-green-600' : 'text-red-600'}>
+                        {selectedCharacters.length}/{maxTeamSize}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Niveau moyen :</span>
+                      <span>
+                        {selectedCharacters.length > 0 
+                          ? Math.floor(selectedCharacters.reduce((sum, char) => sum + char.level, 0) / selectedCharacters.length)
+                          : 0
+                        }
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Synergie :</span>
+                      <span className={synergy.score >= 70 ? 'text-green-600' : synergy.score >= 50 ? 'text-yellow-600' : 'text-red-600'}>
+                        {synergy.score}% - {synergy.description}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Équipe sélectionnée */}
+                {selectedCharacters.length > 0 && (
+                  <div className="bg-fantasy-50 rounded-lg p-4">
+                    <h4 className="font-bold text-fantasy-800 mb-2">Équipe actuelle</h4>
+                    <div className="space-y-2">
+                      {selectedCharacters.map((character) => (
+                        <div key={character.id} className="flex items-center space-x-2 bg-white rounded-lg p-2">
+                          <span className="text-lg">{character.avatar}</span>
+                          <div className="flex-1">
+                            <div className="font-medium text-stone-800 text-sm">{character.name}</div>
+                            <div className="flex items-center space-x-2">
+                              <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${getClassColor(character.class)}`}>
+                                {character.class}
+                              </span>
+                              <span className="text-xs text-stone-500">Niv. {character.level}</span>
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => toggleCharacterSelection(character)}
+                            className="text-red-500 hover:text-red-700 transition-colors"
+                          >
+                            <X className="h-4 w-4" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Sélection des personnages */}
+              <div>
+                <h4 className="font-bold text-stone-800 mb-4">
+                  Aventuriers disponibles ({currentAvailableCharacters.length})
+                </h4>
+                <div className="space-y-3 max-h-96 overflow-y-auto">
+                  {currentAvailableCharacters.map((character) => {
+                    const isSelected = selectedCharacters.find(char => char.id === character.id);
+                    const canSelect = !isSelected && selectedCharacters.length < maxTeamSize;
+
+                    return (
+                      <div
+                        key={character.id}
+                        onClick={() => canSelect && toggleCharacterSelection(character)}
+                        className={`border-2 rounded-lg p-3 transition-all cursor-pointer ${
+                          isSelected
+                            ? 'border-fantasy-500 bg-fantasy-50'
+                            : canSelect
+                            ? 'border-stone-200 hover:border-fantasy-300 bg-white'
+                            : 'border-stone-200 bg-stone-50 opacity-50 cursor-not-allowed'
+                        }`}
+                      >
+                        <div className="flex items-center space-x-3">
+                          <span className="text-2xl">{character.avatar}</span>
+                          <div className="flex-1">
+                            <div className="font-bold text-stone-800">{character.name}</div>
+                            <div className="flex items-center space-x-2 mt-1">
+                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${getClassColor(character.class)}`}>
+                                {character.class}
+                              </span>
+                              <div className="flex items-center space-x-1">
+                                <Star className="h-3 w-3 text-yellow-400 fill-current" />
+                                <span className="text-xs font-medium text-stone-600">Niv. {character.level}</span>
+                              </div>
+                            </div>
+                          </div>
+                          {isSelected && (
+                            <Check className="h-5 w-5 text-fantasy-600" />
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            {/* Boutons d'action */}
+            <div className="flex items-center justify-between mt-6 pt-6 border-t border-stone-200">
+              <div className="text-sm text-stone-600">
+                {selectedCharacters.length < 2 && (
+                  <span className="text-red-600">Sélectionnez au moins 2 aventuriers</span>
+                )}
+                {selectedCharacters.length >= maxTeamSize && (
+                  <span className="text-orange-600">Équipe à capacité maximale</span>
+                )}
+              </div>
+              
+              <div className="flex space-x-3">
+                <button
+                  onClick={() => {
+                    if (isEdit) {
+                      setShowEditModal(false);
+                      setEditingTeam(null);
+                    } else {
+                      setShowCreateModal(false);
+                    }
+                    setNewTeamName('');
+                    setSelectedCharacters([]);
+                    setTeamSpecialty('');
+                  }}
+                  className="px-4 py-2 text-stone-600 hover:text-stone-800 transition-colors"
+                >
+                  Annuler
+                </button>
+                <button
+                  onClick={isEdit ? handleUpdateTeam : handleCreateTeam}
+                  disabled={!newTeamName.trim() || selectedCharacters.length < 2}
+                  className={`px-6 py-2 rounded-lg font-medium transition-colors ${
+                    newTeamName.trim() && selectedCharacters.length >= 2
+                      ? 'bg-fantasy-600 hover:bg-fantasy-700 text-white'
+                      : 'bg-stone-300 text-stone-500 cursor-not-allowed'
+                  }`}
+                >
+                  {isEdit ? 'Modifier l\'équipe' : 'Créer l\'équipe'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className="p-6">
@@ -281,15 +550,16 @@ const TeamsPanel: React.FC<TeamsPanelProps> = ({ gameData, onUpdateGameData }) =
                     Voir détails
                   </button>
                   <button 
-                    disabled={team.status !== 'available'}
+                    onClick={() => handleEditTeam(team)}
+                    disabled={team.status === 'on_quest'}
                     className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-colors flex items-center justify-center space-x-1 ${
-                      team.status === 'available'
+                      team.status !== 'on_quest'
                         ? 'bg-fantasy-100 hover:bg-fantasy-200 text-fantasy-700'
                         : 'bg-stone-200 text-stone-400 cursor-not-allowed'
                     }`}
                   >
-                    <Sword className="h-4 w-4" />
-                    <span>Assigner</span>
+                    <Edit className="h-4 w-4" />
+                    <span>Modifier</span>
                   </button>
                 </div>
               </div>
@@ -320,193 +590,10 @@ const TeamsPanel: React.FC<TeamsPanelProps> = ({ gameData, onUpdateGameData }) =
       )}
 
       {/* Modal de création d'équipe */}
-      {showCreateModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-2xl font-bold text-stone-800">Créer une nouvelle équipe</h3>
-                <button
-                  onClick={() => setShowCreateModal(false)}
-                  className="text-stone-400 hover:text-stone-600 transition-colors"
-                >
-                  <X className="h-6 w-6" />
-                </button>
-              </div>
+      {showCreateModal && renderTeamModal(false)}
 
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Configuration de l'équipe */}
-                <div>
-                  <div className="mb-4">
-                    <label className="block text-sm font-medium text-stone-700 mb-2">
-                      Nom de l'équipe
-                    </label>
-                    <input
-                      type="text"
-                      value={newTeamName}
-                      onChange={(e) => setNewTeamName(e.target.value)}
-                      placeholder="Ex: Les Gardiens de la Lumière"
-                      className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-fantasy-500 focus:border-fantasy-500"
-                    />
-                  </div>
-
-                  <div className="mb-4">
-                    <label className="block text-sm font-medium text-stone-700 mb-2">
-                      Spécialité
-                    </label>
-                    <select
-                      value={teamSpecialty}
-                      onChange={(e) => setTeamSpecialty(e.target.value)}
-                      className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-fantasy-500 focus:border-fantasy-500"
-                    >
-                      {specialties.map((specialty) => (
-                        <option key={specialty} value={specialty}>
-                          {specialty}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* Informations sur l'équipe */}
-                  <div className="bg-stone-50 rounded-lg p-4 mb-4">
-                    <h4 className="font-bold text-stone-800 mb-2">Informations de l'équipe</h4>
-                    <div className="space-y-2 text-sm">
-                      <div className="flex justify-between">
-                        <span>Membres sélectionnés :</span>
-                        <span className={selectedCharacters.length >= 2 ? 'text-green-600' : 'text-red-600'}>
-                          {selectedCharacters.length}/{maxTeamSize}
-                        </span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>Niveau moyen :</span>
-                        <span>
-                          {selectedCharacters.length > 0 
-                            ? Math.floor(selectedCharacters.reduce((sum, char) => sum + char.level, 0) / selectedCharacters.length)
-                            : 0
-                          }
-                        </span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>Synergie :</span>
-                        <span className={synergy.score >= 70 ? 'text-green-600' : synergy.score >= 50 ? 'text-yellow-600' : 'text-red-600'}>
-                          {synergy.score}% - {synergy.description}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Équipe sélectionnée */}
-                  {selectedCharacters.length > 0 && (
-                    <div className="bg-fantasy-50 rounded-lg p-4">
-                      <h4 className="font-bold text-fantasy-800 mb-2">Équipe actuelle</h4>
-                      <div className="space-y-2">
-                        {selectedCharacters.map((character) => (
-                          <div key={character.id} className="flex items-center space-x-2 bg-white rounded-lg p-2">
-                            <span className="text-lg">{character.avatar}</span>
-                            <div className="flex-1">
-                              <div className="font-medium text-stone-800 text-sm">{character.name}</div>
-                              <div className="flex items-center space-x-2">
-                                <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${getClassColor(character.class)}`}>
-                                  {character.class}
-                                </span>
-                                <span className="text-xs text-stone-500">Niv. {character.level}</span>
-                              </div>
-                            </div>
-                            <button
-                              onClick={() => toggleCharacterSelection(character)}
-                              className="text-red-500 hover:text-red-700 transition-colors"
-                            >
-                              <X className="h-4 w-4" />
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Sélection des personnages */}
-                <div>
-                  <h4 className="font-bold text-stone-800 mb-4">
-                    Aventuriers disponibles ({availableCharacters.length})
-                  </h4>
-                  <div className="space-y-3 max-h-96 overflow-y-auto">
-                    {availableCharacters.map((character) => {
-                      const isSelected = selectedCharacters.find(char => char.id === character.id);
-                      const canSelect = !isSelected && selectedCharacters.length < maxTeamSize;
-
-                      return (
-                        <div
-                          key={character.id}
-                          onClick={() => canSelect && toggleCharacterSelection(character)}
-                          className={`border-2 rounded-lg p-3 transition-all cursor-pointer ${
-                            isSelected
-                              ? 'border-fantasy-500 bg-fantasy-50'
-                              : canSelect
-                              ? 'border-stone-200 hover:border-fantasy-300 bg-white'
-                              : 'border-stone-200 bg-stone-50 opacity-50 cursor-not-allowed'
-                          }`}
-                        >
-                          <div className="flex items-center space-x-3">
-                            <span className="text-2xl">{character.avatar}</span>
-                            <div className="flex-1">
-                              <div className="font-bold text-stone-800">{character.name}</div>
-                              <div className="flex items-center space-x-2 mt-1">
-                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${getClassColor(character.class)}`}>
-                                  {character.class}
-                                </span>
-                                <div className="flex items-center space-x-1">
-                                  <Star className="h-3 w-3 text-yellow-400 fill-current" />
-                                  <span className="text-xs font-medium text-stone-600">Niv. {character.level}</span>
-                                </div>
-                              </div>
-                            </div>
-                            {isSelected && (
-                              <Check className="h-5 w-5 text-fantasy-600" />
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
-
-              {/* Boutons d'action */}
-              <div className="flex items-center justify-between mt-6 pt-6 border-t border-stone-200">
-                <div className="text-sm text-stone-600">
-                  {selectedCharacters.length < 2 && (
-                    <span className="text-red-600">Sélectionnez au moins 2 aventuriers</span>
-                  )}
-                  {selectedCharacters.length >= maxTeamSize && (
-                    <span className="text-orange-600">Équipe à capacité maximale</span>
-                  )}
-                </div>
-                
-                <div className="flex space-x-3">
-                  <button
-                    onClick={() => setShowCreateModal(false)}
-                    className="px-4 py-2 text-stone-600 hover:text-stone-800 transition-colors"
-                  >
-                    Annuler
-                  </button>
-                  <button
-                    onClick={handleCreateTeam}
-                    disabled={!newTeamName.trim() || selectedCharacters.length < 2}
-                    className={`px-6 py-2 rounded-lg font-medium transition-colors ${
-                      newTeamName.trim() && selectedCharacters.length >= 2
-                        ? 'bg-fantasy-600 hover:bg-fantasy-700 text-white'
-                        : 'bg-stone-300 text-stone-500 cursor-not-allowed'
-                    }`}
-                  >
-                    Créer l'équipe
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Modal de modification d'équipe */}
+      {showEditModal && renderTeamModal(true)}
     </div>
   );
 };

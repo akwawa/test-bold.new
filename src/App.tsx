@@ -235,6 +235,11 @@ function App() {
     GameStorage.saveGame(updatedGameData);
   };
 
+  const handleUpdateGameData = (updatedGameData: GameSave) => {
+    setGameData(updatedGameData);
+    GameStorage.saveGame(updatedGameData);
+  };
+
   // Obtenir les éléments de navigation déverrouillés
   const unlockedNavigationItems = gameData ? getUnlockedNavigationItems(allNavigationItems, gameData) : [];
   
@@ -260,7 +265,7 @@ function App() {
       case 'guild':
         return <GuildPanel gameData={gameData} />;
       case 'teams':
-        return <TeamsPanel gameData={gameData} />;
+        return <TeamsPanel gameData={gameData} onUpdateGameData={handleUpdateGameData} />;
       case 'quests':
         return <QuestsPanel gameData={gameData} />;
       case 'recruitment':

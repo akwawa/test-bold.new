@@ -1,10 +1,14 @@
 import React from 'react';
 import { Crown, Users, Star, Coins, Gem, Trophy, TrendingUp } from 'lucide-react';
-import { mockGuild } from '../data/mockData';
+import { GameSave } from '../types';
 import BuildingCard from './BuildingCard';
 
-const GuildPanel: React.FC = () => {
-  const guild = mockGuild;
+interface GuildPanelProps {
+  gameData: GameSave;
+}
+
+const GuildPanel: React.FC<GuildPanelProps> = ({ gameData }) => {
+  const guild = gameData.guild;
 
   const handleUpgradeBuilding = (buildingId: number) => {
     console.log(`Amélioration du bâtiment ${buildingId}`);
@@ -30,8 +34,10 @@ const GuildPanel: React.FC = () => {
   return (
     <div className="p-6">
       <div className="mb-6">
-        <h2 className="text-3xl font-bold text-stone-800 font-fantasy">Ma Compagnie d'Aventuriers</h2>
-        <p className="text-stone-600 mt-2">Gérez et améliorez votre compagnie d'aventuriers</p>
+        <h2 className="text-3xl font-bold text-stone-800 font-fantasy">{guild.name}</h2>
+        <p className="text-stone-600 mt-2">
+          Dirigée par {gameData.playerLeader.name} • {gameData.playerLeader.title}
+        </p>
       </div>
 
       {/* Informations de la guilde */}
@@ -75,7 +81,7 @@ const GuildPanel: React.FC = () => {
           
           <div className="bg-fantasy-700/50 rounded-lg p-3 text-center">
             <Coins className="h-6 w-6 mx-auto mb-1 text-yellow-400" />
-            <div className="text-lg font-bold">{guild.gold}</div>
+            <div className="text-lg font-bold">{guild.gold.toLocaleString()}</div>
             <div className="text-fantasy-300 text-xs">Pièces d'Or</div>
           </div>
           
@@ -112,7 +118,9 @@ const GuildPanel: React.FC = () => {
           <div className="flex items-center justify-between">
             <div>
               <h4 className="text-lg font-bold text-stone-800">Taux de Réussite</h4>
-              <p className="text-2xl font-bold text-green-600">87%</p>
+              <p className="text-2xl font-bold text-green-600">
+                {gameData.completedQuests.length > 0 ? '87%' : '0%'}
+              </p>
               <p className="text-stone-500 text-sm">Quêtes réussies</p>
             </div>
             <TrendingUp className="h-12 w-12 text-green-500" />
@@ -123,8 +131,10 @@ const GuildPanel: React.FC = () => {
           <div className="flex items-center justify-between">
             <div>
               <h4 className="text-lg font-bold text-stone-800">Revenus</h4>
-              <p className="text-2xl font-bold text-yellow-600">2,450</p>
-              <p className="text-stone-500 text-sm">Po gagnées cette semaine</p>
+              <p className="text-2xl font-bold text-yellow-600">
+                {gameData.completedQuests.reduce((sum, quest) => sum + quest.reward, 0)}
+              </p>
+              <p className="text-stone-500 text-sm">Po gagnées au total</p>
             </div>
             <Coins className="h-12 w-12 text-yellow-500" />
           </div>
@@ -134,7 +144,7 @@ const GuildPanel: React.FC = () => {
           <div className="flex items-center justify-between">
             <div>
               <h4 className="text-lg font-bold text-stone-800">Contrats</h4>
-              <p className="text-2xl font-bold text-blue-600">12</p>
+              <p className="text-2xl font-bold text-blue-600">{gameData.completedQuests.length}</p>
               <p className="text-stone-500 text-sm">Quêtes terminées</p>
             </div>
             <Trophy className="h-12 w-12 text-blue-500" />
@@ -156,23 +166,13 @@ const GuildPanel: React.FC = () => {
         </div>
       </div>
 
-      {/* Conseils d'amélioration */}
-      <div className="mt-8 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-200">
-        <h4 className="text-lg font-bold text-blue-800 mb-3">💡 Conseils du Maître de Guilde</h4>
-        <ul className="space-y-2 text-blue-700">
-          <li className="flex items-start space-x-2">
-            <span className="text-blue-500 mt-1">•</span>
-            <span className="text-sm">Améliorez la Taverne du Dragon Doré pour accueillir plus d'aventuriers</span>
-          </li>
-          <li className="flex items-start space-x-2">
-            <span className="text-blue-500 mt-1">•</span>
-            <span className="text-sm">Le Tableau des Contrats en cours d'amélioration permettra plus de quêtes simultanées</span>
-          </li>
-          <li className="flex items-start space-x-2">
-            <span className="text-blue-500 mt-1">•</span>
-            <span className="text-sm">Construisez un Temple de Soins pour réduire les temps de récupération après les combats</span>
-          </li>
-        </ul>
+      {/* Capacité spéciale du dirigeant */}
+      <div className="mt-8 bg-gradient-to-r from-fantasy-50 to-fantasy-100 rounded-xl p-6 border border-fantasy-200">
+        <h4 className="text-lg font-bold text-fantasy-800 mb-3 flex items-center space-x-2">
+          <span className="text-2xl">{gameData.playerLeader.specialAbility.icon}</span>
+          <span>{gameData.playerLeader.specialAbility.name}</span>
+        </h4>
+        <p className="text-fantasy-700">{gameData.playerLeader.specialAbility.description}</p>
       </div>
     </div>
   );

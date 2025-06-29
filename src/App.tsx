@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Sword, Users, Package, Map, Settings, Crown, Home } from 'lucide-react';
 import Header from './components/Header';
 import Navigation from './components/Navigation';
@@ -8,21 +8,67 @@ import InventoryPanel from './components/InventoryPanel';
 import OverviewPanel from './components/OverviewPanel';
 import GuildPanel from './components/GuildPanel';
 import CharacterDetailsPanel from './components/CharacterDetailsPanel';
+import GameMenu from './components/GameMenu';
+import CharacterSelection from './components/CharacterSelection';
+import { GameStorage } from './services/gameStorage';
+import { GameSave } from './types';
 
 type ActivePanel = 'overview' | 'guild' | 'teams' | 'quests' | 'inventory' | 'settings' | 'character-details';
+type GameState = 'menu' | 'character-selection' | 'playing';
 
 function App() {
+  const [gameState, setGameState] = useState<GameState>('menu');
   const [activePanel, setActivePanel] = useState<ActivePanel>('overview');
   const [selectedCharacterId, setSelectedCharacterId] = useState<number | undefined>();
+  const [gameData, setGameData] = useState<GameSave | null>(null);
+  const [hasExistingSave, setHasExistingSave] = useState(false);
 
-  const navigationItems = [
-    { id: 'overview' as const, label: 'Vue d\'ensemble', icon: Crown },
-    { id: 'guild' as const, label: 'Guilde', icon: Home },
-    { id: 'teams' as const, label: 'Équipes', icon: Users },
-    { id: 'quests' as const, label: 'Quêtes', icon: Map },
-    { id: 'inventory' as const, label: 'Inventaire', icon: Package },
-    { id: 'settings' as const, label: 'Paramètres', icon: Settings },
-  ];
+  useEffect(() => {
+    // Vérifier s'il y a une sauvegarde existante
+    setHasExistingSave(GameStorage.hasExistingSave());
+    
+    // Auto-sauvegarde toutes les 30 secondes
+    const autoSaveInterval = setInterval(() => {
+      if (gameData && gameState === 'playing') {
+        GameStorage.autoSave(gameData);
+      }
+    }, 30000);
+
+    return () => clearInterval(autoSaveInterval);
+  }, [gameData, gameState]);
+
+  const handleNewGame = () => {
+    setGameState('character-selection');
+  };
+
+  const handleContinueGame = () => {
+    const savedGame = GameStorage.loadGame();
+    if (savedGame) {
+      setGameData(savedGame);
+      setGameState('playing');
+    }
+  };
+
+  const handleDeleteSave = () => {
+    if (confirm('Êtes-vous sûr de vouloir supprimer votre sauvegarde ? Cette action est irréversible.')) {
+      GameStorage.deleteSave();
+      setHasExistingSave(false);
+      setGameData(null);
+      setGameState('menu');
+    }
+  };
+
+  const handleSelectCharacter = (leaderId: string) => {
+    try {
+      const newGame = GameStorage.createNewGame(leaderId);
+      GameStorage.saveGame(newGame);
+      setGameData(newGame);
+      setGameState('playing');
+    } catch (error) {
+      console.error('Erreur lors de la création du jeu:', error);
+      alert('Erreur lors de la création du jeu');
+    }
+  };
 
   const handleViewCharacterDetails = (characterId: number) => {
     setSelectedCharacterId(characterId);
@@ -34,51 +80,132 @@ function App() {
     setSelectedCharacterId(undefined);
   };
 
+  const navigationItems = [
+    { id: 'overview' as const, label: 'Vue d\'ensemble', icon: Crown },
+    { id: 'guild' as const, label: 'Guilde', icon: Home },
+    { id: 'teams' as const, label: 'Équipes', icon: Users },
+    { id: 'quests' as const, label: 'Quêtes', icon: Map },
+    { id: 'inventory' as const, label: 'Inventaire', icon: Package },
+    { id: 'settings' as const, label: 'Paramètres', icon: Settings },
+  ];
+
   const renderActivePanel = () => {
+    if (!gameData) return null;
+
     switch (activePanel) {
       case 'overview':
-        return <OverviewPanel onViewCharacterDetails={handleViewCharacterDetails} />;
+        return <OverviewPanel onViewCharacterDetails={handleViewCharacterDetails} gameData={gameData} />;
       case 'guild':
-        return <GuildPanel />;
+        return <GuildPanel gameData={gameData} />;
       case 'teams':
-        return <TeamsPanel />;
+        return <TeamsPanel gameData={gameData} />;
       case 'quests':
-        return <QuestsPanel />;
+        return <QuestsPanel gameData={gameData} />;
       case 'inventory':
-        return <InventoryPanel />;
+        return <InventoryPanel gameData={gameData} />;
       case 'character-details':
         return (
           <CharacterDetailsPanel 
             characterId={selectedCharacterId}
             onBack={handleBackFromCharacterDetails}
+            gameData={gameData}
           />
         );
       case 'settings':
-        return <div className="p-6"><h2 className="text-2xl font-bold text-stone-800">Paramètres</h2><p className="text-stone-600 mt-2">Fonctionnalité à venir...</p></div>;
+        return (
+          <div className="p-6">
+            <h2 className="text-2xl font-bold text-stone-800 mb-4">Paramètres</h2>
+            <div className="bg-white rounded-xl shadow-lg p-6 border border-stone-200">
+              <div className="space-y-4">
+                <div>
+                  <h3 className="text-lg font-bold text-stone-800 mb-2">Dirigeant Actuel</h3>
+                  <div className="flex items-center space-x-3 bg-stone-50 rounded-lg p-4">
+                    <div className="text-3xl">{gameData.playerLeader.portrait}</div>
+                    <div>
+                      <div className="font-bold text-stone-800">{gameData.playerLeader.name}</div>
+                      <div className="text-stone-600 text-sm">{gameData.playerLeader.title}</div>
+                    </div>
+                  </div>
+                </div>
+                
+                <div>
+                  <h3 className="text-lg font-bold text-stone-800 mb-2">Statistiques de Jeu</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="bg-stone-50 rounded-lg p-3 text-center">
+                      <div className="font-bold text-stone-800">{Math.floor(gameData.gameTime / 60)}h {gameData.gameTime % 60}min</div>
+                      <div className="text-stone-600 text-sm">Temps de jeu</div>
+                    </div>
+                    <div className="bg-stone-50 rounded-lg p-3 text-center">
+                      <div className="font-bold text-stone-800">{gameData.completedQuests.length}</div>
+                      <div className="text-stone-600 text-sm">Quêtes terminées</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="pt-4 border-t border-stone-200">
+                  <button
+                    onClick={() => {
+                      if (confirm('Retourner au menu principal ? Votre progression sera sauvegardée.')) {
+                        GameStorage.saveGame(gameData);
+                        setGameState('menu');
+                        setHasExistingSave(true);
+                      }
+                    }}
+                    className="w-full bg-stone-600 hover:bg-stone-700 text-white py-2 px-4 rounded-lg font-medium transition-colors"
+                  >
+                    Retour au Menu Principal
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
       default:
-        return <OverviewPanel onViewCharacterDetails={handleViewCharacterDetails} />;
+        return <OverviewPanel onViewCharacterDetails={handleViewCharacterDetails} gameData={gameData} />;
     }
   };
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-fantasy-50 to-fantasy-100 bg-parchment">
-      <div className="flex flex-col h-screen">
-        <Header />
-        
-        <div className="flex flex-1 overflow-hidden">
-          <Navigation 
-            items={navigationItems}
-            activePanel={activePanel}
-            onPanelChange={setActivePanel}
-          />
+  // Écran de menu principal
+  if (gameState === 'menu') {
+    return (
+      <GameMenu
+        hasExistingSave={hasExistingSave}
+        onNewGame={handleNewGame}
+        onContinueGame={handleContinueGame}
+        onDeleteSave={handleDeleteSave}
+      />
+    );
+  }
+
+  // Écran de sélection de personnage
+  if (gameState === 'character-selection') {
+    return <CharacterSelection onSelectCharacter={handleSelectCharacter} />;
+  }
+
+  // Jeu principal
+  if (gameState === 'playing' && gameData) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-fantasy-50 to-fantasy-100 bg-parchment">
+        <div className="flex flex-col h-screen">
+          <Header gameData={gameData} />
           
-          <main className="flex-1 overflow-y-auto bg-white/80 backdrop-blur-sm border-l border-fantasy-200">
-            {renderActivePanel()}
-          </main>
+          <div className="flex flex-1 overflow-hidden">
+            <Navigation 
+              items={navigationItems}
+              activePanel={activePanel}
+              onPanelChange={setActivePanel}
+            />
+            
+            <main className="flex-1 overflow-y-auto bg-white/80 backdrop-blur-sm border-l border-fantasy-200">
+              {renderActivePanel()}
+            </main>
+          </div>
         </div>
       </div>
-    </div>
-  );
+    );
+  }
+
+  return null;
 }
 
 export default App;

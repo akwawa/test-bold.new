@@ -113,3 +113,43 @@ export interface Guild {
   maxMembers: number;
   currentMembers: number;
 }
+
+export interface PlayerLeader {
+  id: string;
+  name: string;
+  title: string;
+  background: string;
+  description: string;
+  portrait: string;
+  startingGold: number;
+  startingGems: number;
+  bonuses: {
+    type: 'gold' | 'experience' | 'reputation' | 'quest_rewards' | 'building_cost' | 'recruitment';
+    value: number;
+    description: string;
+  }[];
+  maluses: {
+    type: 'gold' | 'experience' | 'reputation' | 'quest_rewards' | 'building_cost' | 'recruitment';
+    value: number;
+    description: string;
+  }[];
+  startingBuildings: string[];
+  specialAbility: {
+    name: string;
+    description: string;
+    icon: string;
+  };
+}
+
+export interface GameSave {
+  playerId: string;
+  playerLeader: PlayerLeader;
+  guild: Guild;
+  characters: Character[];
+  teams: Team[];
+  activeQuests: ActiveQuest[];
+  completedQuests: Quest[];
+  gameTime: number; // temps de jeu en minutes
+  lastSave: Date;
+  achievements: string[];
+}

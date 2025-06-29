@@ -1,18 +1,23 @@
 import React from 'react';
 import { Map, Clock, Star, Coins, Users, Skull, Shield, Sword, Crown } from 'lucide-react';
+import { GameSave } from '../types';
 
-const QuestsPanel: React.FC = () => {
+interface QuestsPanelProps {
+  gameData: GameSave;
+}
+
+const QuestsPanel: React.FC<QuestsPanelProps> = ({ gameData }) => {
   const quests = [
     {
       id: 1,
       title: 'Les Cryptes de Château-Suif',
       description: 'Explorez les cryptes hantées sous l\'ancien château et éliminez le nécromancien qui terrorise la région.',
       difficulty: 4,
-      duration: '4h 00min',
+      duration: 240,
       reward: 1200,
       type: 'Donjon',
       requiredLevel: 5,
-      status: 'in_progress',
+      status: 'available' as const,
       enemies: 'Squelettes, Zombies, Nécromancien'
     },
     {
@@ -20,11 +25,11 @@ const QuestsPanel: React.FC = () => {
       title: 'Raid Orque sur Pierrehavre',
       description: 'Défendez le paisible village de Pierrehavre contre une horde d\'orques menée par un chef de guerre brutal.',
       difficulty: 3,
-      duration: '3h 00min',
+      duration: 180,
       reward: 800,
       type: 'Combat',
       requiredLevel: 4,
-      status: 'in_progress',
+      status: 'available' as const,
       enemies: 'Orques, Chef de Guerre Orque'
     },
     {
@@ -32,11 +37,11 @@ const QuestsPanel: React.FC = () => {
       title: 'Le Trésor du Dragon Vert',
       description: 'Infiltrez le repaire de Chlorophylle l\'Ancienne et dérobez une partie de son trésor légendaire.',
       difficulty: 5,
-      duration: '6h 00min',
+      duration: 360,
       reward: 2500,
       type: 'Donjon',
       requiredLevel: 7,
-      status: 'available',
+      status: 'available' as const,
       enemies: 'Dragon Vert Ancien, Kobolds, Pièges'
     },
     {
@@ -44,11 +49,11 @@ const QuestsPanel: React.FC = () => {
       title: 'Escorte de Caravane',
       description: 'Escortez une caravane marchande à travers les Terres Sauvages infestées de bandits et de monstres.',
       difficulty: 2,
-      duration: '2h 30min',
+      duration: 150,
       reward: 450,
       type: 'Escorte',
       requiredLevel: 3,
-      status: 'available',
+      status: 'available' as const,
       enemies: 'Bandits, Loups, Gobelins'
     },
     {
@@ -56,11 +61,11 @@ const QuestsPanel: React.FC = () => {
       title: 'Négociation avec les Elfes',
       description: 'Négociez un traité commercial avec les Seigneurs Elfes de la Cour d\'Été dans leur domaine féerique.',
       difficulty: 3,
-      duration: '2h 00min',
+      duration: 120,
       reward: 600,
       type: 'Diplomatie',
       requiredLevel: 4,
-      status: 'available',
+      status: 'available' as const,
       enemies: 'Aucun (Négociation)'
     },
     {
@@ -68,36 +73,12 @@ const QuestsPanel: React.FC = () => {
       title: 'Purification du Temple Maudit',
       description: 'Purifiez l\'ancien temple de Lathandre souillé par des cultistes de Cyric et leurs démons.',
       difficulty: 4,
-      duration: '3h 30min',
+      duration: 210,
       reward: 1000,
       type: 'Religieux',
       requiredLevel: 5,
-      status: 'available',
+      status: 'available' as const,
       enemies: 'Cultistes, Démons Mineurs, Prêtre Déchu'
-    },
-    {
-      id: 7,
-      title: 'Chasse au Basilic',
-      description: 'Traquez et éliminez le basilic qui pétrifie les voyageurs sur la Route du Commerce.',
-      difficulty: 3,
-      duration: '2h 45min',
-      reward: 750,
-      type: 'Chasse',
-      requiredLevel: 4,
-      status: 'available',
-      enemies: 'Basilic, Lézards Géants'
-    },
-    {
-      id: 8,
-      title: 'Récupération d\'Artefact',
-      description: 'Récupérez l\'Orbe de Contrôle Élémentaire volé par des mages renégats dans leur tour flottante.',
-      difficulty: 5,
-      duration: '5h 00min',
-      reward: 1800,
-      type: 'Récupération',
-      requiredLevel: 6,
-      status: 'available',
-      enemies: 'Mages Renégats, Élémentaires, Golems'
     }
   ];
 
@@ -145,6 +126,38 @@ const QuestsPanel: React.FC = () => {
     ));
   };
 
+  const formatTime = (minutes: number): string => {
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    if (hours > 0) {
+      return `${hours}h ${mins > 0 ? mins + 'min' : ''}`;
+    }
+    return `${mins}min`;
+  };
+
+  // Appliquer les bonus du dirigeant
+  const getAdjustedReward = (baseReward: number, questType: string): number => {
+    let multiplier = 1;
+    
+    gameData.playerLeader.bonuses.forEach(bonus => {
+      if (bonus.type === 'quest_rewards') {
+        multiplier += bonus.value / 100;
+      } else if (bonus.type === 'gold' && questType === 'Diplomatie') {
+        multiplier += bonus.value / 100;
+      }
+    });
+
+    gameData.playerLeader.maluses.forEach(malus => {
+      if (malus.type === 'quest_rewards') {
+        multiplier -= Math.abs(malus.value) / 100;
+      } else if (malus.type === 'gold' && questType === 'Diplomatie') {
+        multiplier -= Math.abs(malus.value) / 100;
+      }
+    });
+
+    return Math.round(baseReward * multiplier);
+  };
+
   return (
     <div className="p-6">
       <div className="mb-6">
@@ -153,76 +166,89 @@ const QuestsPanel: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {quests.map((quest) => (
-          <div key={quest.id} className="bg-white rounded-xl shadow-lg border border-stone-200 overflow-hidden hover:shadow-xl transition-shadow">
-            <div className="p-6">
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex-1">
-                  <h3 className="text-xl font-bold text-stone-800 mb-2">{quest.title}</h3>
-                  <p className="text-stone-600 text-sm leading-relaxed mb-3">{quest.description}</p>
-                  
-                  <div className="flex items-center space-x-2 mb-2">
-                    <span className="text-stone-500 text-sm font-medium">Ennemis:</span>
-                    <span className="text-stone-700 text-sm">{quest.enemies}</span>
+        {quests.map((quest) => {
+          const adjustedReward = getAdjustedReward(quest.reward, quest.type);
+          const isInProgress = gameData.activeQuests.some(aq => aq.id === quest.id);
+          
+          return (
+            <div key={quest.id} className="bg-white rounded-xl shadow-lg border border-stone-200 overflow-hidden hover:shadow-xl transition-shadow">
+              <div className="p-6">
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex-1">
+                    <h3 className="text-xl font-bold text-stone-800 mb-2">{quest.title}</h3>
+                    <p className="text-stone-600 text-sm leading-relaxed mb-3">{quest.description}</p>
+                    
+                    <div className="flex items-center space-x-2 mb-2">
+                      <span className="text-stone-500 text-sm font-medium">Ennemis:</span>
+                      <span className="text-stone-700 text-sm">{quest.enemies}</span>
+                    </div>
+                  </div>
+                  <div className="ml-4 text-center">
+                    {getTypeIcon(quest.type)}
+                    <div className="text-xs text-stone-500 mt-1">{quest.type}</div>
                   </div>
                 </div>
-                <div className="ml-4 text-center">
-                  {getTypeIcon(quest.type)}
-                  <div className="text-xs text-stone-500 mt-1">{quest.type}</div>
-                </div>
-              </div>
 
-              <div className="flex flex-wrap gap-2 mb-4">
-                <span className={`px-3 py-1 rounded-full text-xs font-medium flex items-center space-x-1 ${getTypeColor(quest.type)}`}>
-                  {getTypeIcon(quest.type)}
-                  <span>{quest.type}</span>
-                </span>
-                <div className={`px-3 py-1 rounded-full text-xs font-medium flex items-center space-x-1 ${getDifficultyColor(quest.difficulty)}`}>
-                  <div className="flex items-center space-x-1">
-                    {getDifficultyStars(quest.difficulty)}
-                  </div>
-                </div>
-                {quest.status === 'in_progress' && (
-                  <span className="px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                    En cours
+                <div className="flex flex-wrap gap-2 mb-4">
+                  <span className={`px-3 py-1 rounded-full text-xs font-medium flex items-center space-x-1 ${getTypeColor(quest.type)}`}>
+                    {getTypeIcon(quest.type)}
+                    <span>{quest.type}</span>
                   </span>
-                )}
-              </div>
+                  <div className={`px-3 py-1 rounded-full text-xs font-medium flex items-center space-x-1 ${getDifficultyColor(quest.difficulty)}`}>
+                    <div className="flex items-center space-x-1">
+                      {getDifficultyStars(quest.difficulty)}
+                    </div>
+                  </div>
+                  {isInProgress && (
+                    <span className="px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                      En cours
+                    </span>
+                  )}
+                </div>
 
-              <div className="grid grid-cols-3 gap-4 mb-4 text-sm">
-                <div className="flex items-center space-x-2 text-stone-600">
-                  <Clock className="h-4 w-4" />
-                  <span>{quest.duration}</span>
+                <div className="grid grid-cols-3 gap-4 mb-4 text-sm">
+                  <div className="flex items-center space-x-2 text-stone-600">
+                    <Clock className="h-4 w-4" />
+                    <span>{formatTime(quest.duration)}</span>
+                  </div>
+                  <div className="flex items-center space-x-2 text-stone-600">
+                    <Coins className="h-4 w-4 text-yellow-500" />
+                    <span>
+                      {adjustedReward !== quest.reward && (
+                        <span className="line-through text-stone-400 mr-1">{quest.reward}</span>
+                      )}
+                      {adjustedReward} po
+                    </span>
+                  </div>
+                  <div className="flex items-center space-x-2 text-stone-600">
+                    <Users className="h-4 w-4" />
+                    <span>Niv. {quest.requiredLevel}+</span>
+                  </div>
                 </div>
-                <div className="flex items-center space-x-2 text-stone-600">
-                  <Coins className="h-4 w-4 text-yellow-500" />
-                  <span>{quest.reward} po</span>
-                </div>
-                <div className="flex items-center space-x-2 text-stone-600">
-                  <Users className="h-4 w-4" />
-                  <span>Niv. {quest.requiredLevel}+</span>
-                </div>
-              </div>
 
-              <div className="flex space-x-2">
-                {quest.status === 'available' ? (
-                  <>
-                    <button className="flex-1 bg-fantasy-600 hover:bg-fantasy-700 text-white py-2 px-4 rounded-lg font-medium transition-colors">
-                      Assigner équipe
+                <div className="flex space-x-2">
+                  {!isInProgress ? (
+                    <>
+                      <button 
+                        className="flex-1 bg-fantasy-600 hover:bg-fantasy-700 text-white py-2 px-4 rounded-lg font-medium transition-colors"
+                        disabled={gameData.teams.length === 0}
+                      >
+                        {gameData.teams.length === 0 ? 'Aucune équipe' : 'Assigner équipe'}
+                      </button>
+                      <button className="bg-stone-100 hover:bg-stone-200 text-stone-700 py-2 px-4 rounded-lg font-medium transition-colors">
+                        Détails
+                      </button>
+                    </>
+                  ) : (
+                    <button className="flex-1 bg-stone-300 text-stone-500 py-2 px-4 rounded-lg font-medium cursor-not-allowed">
+                      En cours...
                     </button>
-                    <button className="bg-stone-100 hover:bg-stone-200 text-stone-700 py-2 px-4 rounded-lg font-medium transition-colors">
-                      Détails
-                    </button>
-                  </>
-                ) : (
-                  <button className="flex-1 bg-stone-300 text-stone-500 py-2 px-4 rounded-lg font-medium cursor-not-allowed">
-                    En cours...
-                  </button>
-                )}
+                  )}
+                </div>
               </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* Légende des difficultés */}
@@ -261,6 +287,20 @@ const QuestsPanel: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Bonus du dirigeant pour les quêtes */}
+      {gameData.playerLeader.bonuses.some(b => b.type === 'quest_rewards' || b.type === 'gold') && (
+        <div className="mt-6 bg-gradient-to-r from-fantasy-50 to-fantasy-100 rounded-xl p-4 border border-fantasy-200">
+          <h4 className="font-bold text-fantasy-800 mb-2">Bonus de {gameData.playerLeader.name}</h4>
+          <div className="text-sm text-fantasy-700">
+            {gameData.playerLeader.bonuses
+              .filter(b => b.type === 'quest_rewards' || b.type === 'gold')
+              .map((bonus, index) => (
+                <div key={index}>• {bonus.description}</div>
+              ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

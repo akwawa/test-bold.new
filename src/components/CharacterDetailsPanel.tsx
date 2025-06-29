@@ -1,23 +1,29 @@
 import React, { useState } from 'react';
 import { ArrowLeft, Star, Heart, Zap, Sword, Shield, Brain, Activity, Calendar, Trophy, Coins } from 'lucide-react';
-import { Character, Equipment, Skill } from '../types';
-import { mockCharacters } from '../data/mockData';
+import { Character, Equipment, Skill, GameSave } from '../types';
 
 interface CharacterDetailsPanelProps {
   characterId?: number;
   onBack: () => void;
+  gameData: GameSave;
 }
 
-const CharacterDetailsPanel: React.FC<CharacterDetailsPanelProps> = ({ characterId, onBack }) => {
+const CharacterDetailsPanel: React.FC<CharacterDetailsPanelProps> = ({ characterId, onBack, gameData }) => {
   const [activeTab, setActiveTab] = useState<'stats' | 'equipment' | 'skills' | 'history'>('stats');
   
-  const character = mockCharacters.find(c => c.id === characterId);
+  const character = gameData.characters.find(c => c.id === characterId);
   
   if (!character) {
     return (
       <div className="p-6">
         <div className="text-center">
           <h2 className="text-2xl font-bold text-stone-800">Personnage non trouvé</h2>
+          <p className="text-stone-600 mt-2">
+            {gameData.characters.length === 0 
+              ? 'Aucun personnage n\'a encore été recruté dans votre compagnie.'
+              : 'Ce personnage n\'existe pas ou a quitté votre compagnie.'
+            }
+          </p>
           <button
             onClick={onBack}
             className="mt-4 bg-fantasy-600 hover:bg-fantasy-700 text-white px-4 py-2 rounded-lg"
@@ -35,6 +41,7 @@ const CharacterDetailsPanel: React.FC<CharacterDetailsPanelProps> = ({ character
       case 'Guerrier':
         return 'from-red-500 to-red-600';
       case 'Mage':
+      case 'Magicien':
         return 'from-blue-500 to-blue-600';
       case 'Rôdeur':
         return 'from-green-500 to-green-600';
@@ -43,7 +50,12 @@ const CharacterDetailsPanel: React.FC<CharacterDetailsPanelProps> = ({ character
       case 'Druide':
         return 'from-emerald-500 to-emerald-600';
       case 'Assassin':
+      case 'Roublard':
         return 'from-purple-500 to-purple-600';
+      case 'Clerc':
+        return 'from-pink-500 to-pink-600';
+      case 'Barbare':
+        return 'from-orange-500 to-orange-600';
       default:
         return 'from-stone-500 to-stone-600';
     }
@@ -219,7 +231,7 @@ const CharacterDetailsPanel: React.FC<CharacterDetailsPanelProps> = ({ character
           <div className="w-full bg-stone-200 rounded-full h-3">
             <div
               className="bg-blue-500 h-3 rounded-full transition-all"
-              style={{ width: `${(character.mana / character.maxMana) * 100}%` }}
+              style={{ width: `${character.maxMana > 0 ? (character.mana / character.maxMana) * 100 : 0}%` }}
             />
           </div>
         </div>
@@ -303,36 +315,44 @@ const CharacterDetailsPanel: React.FC<CharacterDetailsPanelProps> = ({ character
           {activeTab === 'skills' && (
             <div>
               <h3 className="text-xl font-bold text-stone-800 mb-4">Compétences</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {character.skills.map(skill => (
-                  <div key={skill.id} className="bg-stone-50 rounded-lg p-4 border border-stone-200">
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center space-x-3">
-                        <div className="text-2xl">{skill.icon}</div>
-                        <div>
-                          <h4 className="font-bold text-stone-800">{skill.name}</h4>
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${getSkillTypeColor(skill.type)}`}>
-                            {skill.type}
-                          </span>
+              {character.skills.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {character.skills.map(skill => (
+                    <div key={skill.id} className="bg-stone-50 rounded-lg p-4 border border-stone-200">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center space-x-3">
+                          <div className="text-2xl">{skill.icon}</div>
+                          <div>
+                            <h4 className="font-bold text-stone-800">{skill.name}</h4>
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${getSkillTypeColor(skill.type)}`}>
+                              {skill.type}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-sm text-stone-600">Niveau</div>
+                          <div className="font-bold text-stone-800">{skill.level}/{skill.maxLevel}</div>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <div className="text-sm text-stone-600">Niveau</div>
-                        <div className="font-bold text-stone-800">{skill.level}/{skill.maxLevel}</div>
+                      
+                      <p className="text-stone-600 text-sm mb-3">{skill.description}</p>
+                      
+                      <div className="w-full bg-stone-200 rounded-full h-2">
+                        <div
+                          className="bg-fantasy-500 h-2 rounded-full"
+                          style={{ width: `${(skill.level / skill.maxLevel) * 100}%` }}
+                        />
                       </div>
                     </div>
-                    
-                    <p className="text-stone-600 text-sm mb-3">{skill.description}</p>
-                    
-                    <div className="w-full bg-stone-200 rounded-full h-2">
-                      <div
-                        className="bg-fantasy-500 h-2 rounded-full"
-                        style={{ width: `${(skill.level / skill.maxLevel) * 100}%` }}
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <Brain className="h-12 w-12 text-stone-400 mx-auto mb-3" />
+                  <p className="text-stone-600">Aucune compétence apprise</p>
+                  <p className="text-stone-500 text-sm mt-1">Ce personnage n'a pas encore développé de compétences spéciales</p>
+                </div>
+              )}
             </div>
           )}
 
@@ -363,27 +383,30 @@ const CharacterDetailsPanel: React.FC<CharacterDetailsPanelProps> = ({ character
               <div className="bg-stone-50 rounded-lg p-4">
                 <h4 className="font-bold text-stone-800 mb-3">Activités récentes</h4>
                 <div className="space-y-3">
-                  <div className="flex items-start space-x-3">
-                    <div className="w-2 h-2 bg-green-500 rounded-full mt-2"></div>
-                    <div>
-                      <p className="text-stone-700 font-medium">Quête "Forêt Maudite" terminée avec succès</p>
-                      <p className="text-stone-500 text-sm">Il y a 2 jours - Récompense: 250 or</p>
+                  {character.questsCompleted > 0 ? (
+                    <>
+                      <div className="flex items-start space-x-3">
+                        <div className="w-2 h-2 bg-green-500 rounded-full mt-2"></div>
+                        <div>
+                          <p className="text-stone-700 font-medium">A rejoint la compagnie</p>
+                          <p className="text-stone-500 text-sm">{formatDate(character.joinDate)}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-start space-x-3">
+                        <div className="w-2 h-2 bg-blue-500 rounded-full mt-2"></div>
+                        <div>
+                          <p className="text-stone-700 font-medium">Niveau {character.level} atteint</p>
+                          <p className="text-stone-500 text-sm">Progression continue</p>
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="text-center py-4">
+                      <Calendar className="h-8 w-8 text-stone-400 mx-auto mb-2" />
+                      <p className="text-stone-600">Aucune activité récente</p>
+                      <p className="text-stone-500 text-sm mt-1">Ce personnage n'a pas encore participé à des quêtes</p>
                     </div>
-                  </div>
-                  <div className="flex items-start space-x-3">
-                    <div className="w-2 h-2 bg-blue-500 rounded-full mt-2"></div>
-                    <div>
-                      <p className="text-stone-700 font-medium">Niveau {character.level} atteint</p>
-                      <p className="text-stone-500 text-sm">Il y a 5 jours</p>
-                    </div>
-                  </div>
-                  <div className="flex items-start space-x-3">
-                    <div className="w-2 h-2 bg-purple-500 rounded-full mt-2"></div>
-                    <div>
-                      <p className="text-stone-700 font-medium">Nouvelle compétence apprise</p>
-                      <p className="text-stone-500 text-sm">Il y a 1 semaine</p>
-                    </div>
-                  </div>
+                  )}
                 </div>
               </div>
             </div>

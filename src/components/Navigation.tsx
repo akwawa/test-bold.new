@@ -1,19 +1,21 @@
 import React from 'react';
-import { type LucideIcon } from 'lucide-react';
+import { type LucideIcon, Lock, Info } from 'lucide-react';
 
 interface NavigationItem {
   id: string;
   label: string;
   icon: LucideIcon;
+  isUnlocked?: boolean;
 }
 
 interface NavigationProps {
   items: NavigationItem[];
   activePanel: string;
   onPanelChange: (panel: string) => void;
+  nextUnlockHint?: string | null;
 }
 
-const Navigation: React.FC<NavigationProps> = ({ items, activePanel, onPanelChange }) => {
+const Navigation: React.FC<NavigationProps> = ({ items, activePanel, onPanelChange, nextUnlockHint }) => {
   return (
     <nav className="w-64 bg-gradient-to-b from-stone-800 to-stone-900 text-white shadow-xl">
       <div className="p-4">
@@ -39,6 +41,19 @@ const Navigation: React.FC<NavigationProps> = ({ items, activePanel, onPanelChan
             );
           })}
         </ul>
+
+        {/* Indication du prochain déverrouillage */}
+        {nextUnlockHint && (
+          <div className="mt-6 bg-stone-700/50 rounded-lg p-3">
+            <div className="flex items-start space-x-2">
+              <Info className="h-4 w-4 text-blue-400 mt-0.5 flex-shrink-0" />
+              <div>
+                <div className="text-xs font-medium text-blue-300 mb-1">Prochain objectif:</div>
+                <div className="text-xs text-stone-300 leading-relaxed">{nextUnlockHint}</div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
       
       <div className="absolute bottom-4 left-4 right-4">

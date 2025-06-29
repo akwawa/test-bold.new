@@ -12,8 +12,9 @@ import RecruitmentPanel from './components/RecruitmentPanel';
 import GameMenu from './components/GameMenu';
 import CharacterSelection from './components/CharacterSelection';
 import { GameStorage } from './services/gameStorage';
-import { GameSave, RecruitableCharacter } from './types';
+import { GameSave, RecruitableCharacter, NavigationItem } from './types';
 import { generateRecruitPool } from './data/recruitableCharacters';
+import { getUnlockedNavigationItems, getNextUnlockHint } from './utils/unlockSystem';
 
 type ActivePanel = 'overview' | 'guild' | 'teams' | 'quests' | 'inventory' | 'recruitment' | 'settings' | 'character-details';
 type GameState = 'menu' | 'character-selection' | 'playing';
@@ -24,6 +25,61 @@ function App() {
   const [selectedCharacterId, setSelectedCharacterId] = useState<number | undefined>();
   const [gameData, setGameData] = useState<GameSave | null>(null);
   const [hasExistingSave, setHasExistingSave] = useState(false);
+
+  // Définition des éléments de navigation avec leurs conditions de déverrouillage
+  const allNavigationItems: NavigationItem[] = [
+    { 
+      id: 'overview', 
+      label: 'Vue d\'ensemble', 
+      icon: Crown,
+      unlockConditions: [{ type: 'always', description: 'Toujours disponible' }]
+    },
+    { 
+      id: 'guild', 
+      label: 'Guilde', 
+      icon: Home,
+      unlockConditions: [{ type: 'always', description: 'Toujours disponible' }]
+    },
+    { 
+      id: 'recruitment', 
+      label: 'Recrutement', 
+      icon: UserPlus,
+      unlockConditions: [
+        { type: 'building', value: 'tavern', description: 'Construire une taverne' }
+      ]
+    },
+    { 
+      id: 'teams', 
+      label: 'Équipes', 
+      icon: Users,
+      unlockConditions: [
+        { type: 'characters', value: 2, description: 'Recruter au moins 2 aventuriers' }
+      ]
+    },
+    { 
+      id: 'quests', 
+      label: 'Quêtes', 
+      icon: Map,
+      unlockConditions: [
+        { type: 'building', value: 'quest_board', description: 'Construire un tableau des quêtes' },
+        { type: 'characters', value: 1, description: 'Recruter au moins 1 aventurier' }
+      ]
+    },
+    { 
+      id: 'inventory', 
+      label: 'Inventaire', 
+      icon: Package,
+      unlockConditions: [
+        { type: 'quests_completed', value: 1, description: 'Terminer au moins 1 quête' }
+      ]
+    },
+    { 
+      id: 'settings', 
+      label: 'Paramètres', 
+      icon: Settings,
+      unlockConditions: [{ type: 'always', description: 'Toujours disponible' }]
+    }
+  ];
 
   useEffect(() => {
     // Vérifier s'il y a une sauvegarde existante
@@ -179,15 +235,21 @@ function App() {
     GameStorage.saveGame(updatedGameData);
   };
 
-  const navigationItems = [
-    { id: 'overview' as const, label: 'Vue d\'ensemble', icon: Crown },
-    { id: 'guild' as const, label: 'Guilde', icon: Home },
-    { id: 'teams' as const, label: 'Équipes', icon: Users },
-    { id: 'quests' as const, label: 'Quêtes', icon: Map },
-    { id: 'recruitment' as const, label: 'Recrutement', icon: UserPlus },
-    { id: 'inventory' as const, label: 'Inventaire', icon: Package },
-    { id: 'settings' as const, label: 'Paramètres', icon: Settings },
-  ];
+  // Obtenir les éléments de navigation déverrouillés
+  const unlockedNavigationItems = gameData ? getUnlockedNavigationItems(allNavigationItems, gameData) : [];
+  
+  // Obtenir l'indice pour le prochain déverrouillage
+  const nextUnlockHint = gameData ? getNextUnlockHint(allNavigationItems, gameData) : null;
+
+  // Vérifier si le panel actuel est déverrouillé, sinon revenir à overview
+  useEffect(() => {
+    if (gameData && unlockedNavigationItems.length > 0) {
+      const currentPanelUnlocked = unlockedNavigationItems.some(item => item.id === activePanel);
+      if (!currentPanelUnlocked && activePanel !== 'character-details') {
+        setActivePanel('overview');
+      }
+    }
+  }, [gameData, unlockedNavigationItems, activePanel]);
 
   const renderActivePanel = () => {
     if (!gameData) return null;
@@ -250,6 +312,31 @@ function App() {
                   </div>
                 </div>
 
+                {/* Progression et déverrouillages */}
+                <div>
+                  <h3 className="text-lg font-bold text-stone-800 mb-2">Progression</h3>
+                  <div className="bg-stone-50 rounded-lg p-4">
+                    <div className="mb-3">
+                      <div className="text-sm font-medium text-stone-700 mb-1">
+                        Fonctionnalités déverrouillées: {unlockedNavigationItems.length}/{allNavigationItems.length}
+                      </div>
+                      <div className="w-full bg-stone-200 rounded-full h-2">
+                        <div
+                          className="bg-fantasy-500 h-2 rounded-full transition-all"
+                          style={{ width: `${(unlockedNavigationItems.length / allNavigationItems.length) * 100}%` }}
+                        />
+                      </div>
+                    </div>
+                    
+                    {nextUnlockHint && (
+                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                        <div className="text-sm font-medium text-blue-800 mb-1">Prochain objectif:</div>
+                        <div className="text-sm text-blue-700">{nextUnlockHint}</div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
                 <div className="pt-4 border-t border-stone-200">
                   <button
                     onClick={() => {
@@ -299,9 +386,10 @@ function App() {
           
           <div className="flex flex-1 overflow-hidden">
             <Navigation 
-              items={navigationItems}
+              items={unlockedNavigationItems}
               activePanel={activePanel}
               onPanelChange={setActivePanel}
+              nextUnlockHint={nextUnlockHint}
             />
             
             <main className="flex-1 overflow-y-auto bg-white/80 backdrop-blur-sm border-l border-fantasy-200">

@@ -161,3 +161,18 @@ export interface GameSave {
   availableRecruits: RecruitableCharacter[]; // Personnages disponibles au recrutement
   lastRecruitRefresh: Date; // Dernière actualisation des recrues
 }
+
+// Nouvelles interfaces pour le système de progression
+export interface UnlockCondition {
+  type: 'building' | 'characters' | 'quests_completed' | 'guild_level' | 'gold' | 'always';
+  value?: any;
+  description: string;
+}
+
+export interface NavigationItem {
+  id: string;
+  label: string;
+  icon: any;
+  unlockConditions: UnlockCondition[];
+  isUnlocked?: boolean;
+}

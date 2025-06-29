@@ -26,6 +26,7 @@ export interface Character {
   joinDate: Date;
   questsCompleted: number;
   totalEarnings: number;
+  recruitmentCost?: number; // Coût de recrutement
 }
 
 export interface Equipment {
@@ -141,6 +142,11 @@ export interface PlayerLeader {
   };
 }
 
+export interface RecruitableCharacter extends Omit<Character, 'id' | 'joinDate' | 'questsCompleted' | 'totalEarnings'> {
+  recruitmentCost: number;
+  rarity: 'common' | 'rare' | 'epic' | 'legendary';
+}
+
 export interface GameSave {
   playerId: string;
   playerLeader: PlayerLeader;
@@ -152,4 +158,6 @@ export interface GameSave {
   gameTime: number; // temps de jeu en minutes
   lastSave: Date;
   achievements: string[];
+  availableRecruits: RecruitableCharacter[]; // Personnages disponibles au recrutement
+  lastRecruitRefresh: Date; // Dernière actualisation des recrues
 }

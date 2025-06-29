@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Sword, Users, Package, Map, Settings, Crown, Home } from 'lucide-react';
+import { Sword, Users, Package, Map, Settings, Crown, Home, UserPlus } from 'lucide-react';
 import Header from './components/Header';
 import Navigation from './components/Navigation';
 import TeamsPanel from './components/TeamsPanel';
@@ -8,12 +8,14 @@ import InventoryPanel from './components/InventoryPanel';
 import OverviewPanel from './components/OverviewPanel';
 import GuildPanel from './components/GuildPanel';
 import CharacterDetailsPanel from './components/CharacterDetailsPanel';
+import RecruitmentPanel from './components/RecruitmentPanel';
 import GameMenu from './components/GameMenu';
 import CharacterSelection from './components/CharacterSelection';
 import { GameStorage } from './services/gameStorage';
-import { GameSave } from './types';
+import { GameSave, RecruitableCharacter } from './types';
+import { generateRecruitPool } from './data/recruitableCharacters';
 
-type ActivePanel = 'overview' | 'guild' | 'teams' | 'quests' | 'inventory' | 'settings' | 'character-details';
+type ActivePanel = 'overview' | 'guild' | 'teams' | 'quests' | 'inventory' | 'recruitment' | 'settings' | 'character-details';
 type GameState = 'menu' | 'character-selection' | 'playing';
 
 function App() {
@@ -44,6 +46,11 @@ function App() {
   const handleContinueGame = () => {
     const savedGame = GameStorage.loadGame();
     if (savedGame) {
+      // S'assurer que les recrues sont initialisées
+      if (!savedGame.availableRecruits || savedGame.availableRecruits.length === 0) {
+        savedGame.availableRecruits = generateRecruitPool();
+        savedGame.lastRecruitRefresh = new Date();
+      }
       setGameData(savedGame);
       setGameState('playing');
     }
@@ -61,6 +68,10 @@ function App() {
   const handleSelectCharacter = (leaderId: string) => {
     try {
       const newGame = GameStorage.createNewGame(leaderId);
+      // Initialiser les recrues disponibles
+      newGame.availableRecruits = generateRecruitPool();
+      newGame.lastRecruitRefresh = new Date();
+      
       GameStorage.saveGame(newGame);
       setGameData(newGame);
       setGameState('playing');
@@ -80,11 +91,100 @@ function App() {
     setSelectedCharacterId(undefined);
   };
 
+  const handleRecruit = (recruit: RecruitableCharacter) => {
+    if (!gameData) return;
+
+    // Calculer le coût ajusté
+    let costMultiplier = 1;
+    gameData.playerLeader.bonuses.forEach(bonus => {
+      if (bonus.type === 'recruitment') {
+        costMultiplier -= bonus.value / 100;
+      }
+    });
+    gameData.playerLeader.maluses.forEach(malus => {
+      if (malus.type === 'recruitment') {
+        costMultiplier += Math.abs(malus.value) / 100;
+      }
+    });
+
+    const finalCost = Math.round(recruit.recruitmentCost * costMultiplier);
+
+    // Vérifier si on peut recruter
+    if (gameData.guild.gold < finalCost) {
+      alert('Pas assez d\'or pour recruter cet aventurier !');
+      return;
+    }
+
+    if (gameData.guild.currentMembers >= gameData.guild.maxMembers) {
+      alert('Votre compagnie a atteint sa capacité maximale !');
+      return;
+    }
+
+    // Créer le nouveau personnage
+    const newCharacter = {
+      ...recruit,
+      id: Date.now(), // ID unique basé sur le timestamp
+      joinDate: new Date(),
+      questsCompleted: 0,
+      totalEarnings: 0
+    };
+
+    // Supprimer recruitmentCost et rarity qui ne sont pas dans Character
+    const { recruitmentCost, rarity, ...characterData } = newCharacter;
+
+    // Mettre à jour les données du jeu
+    const updatedGameData = {
+      ...gameData,
+      characters: [...gameData.characters, characterData],
+      guild: {
+        ...gameData.guild,
+        gold: gameData.guild.gold - finalCost,
+        currentMembers: gameData.guild.currentMembers + 1
+      },
+      availableRecruits: gameData.availableRecruits.filter((_, index) => 
+        gameData.availableRecruits.indexOf(recruit) !== index
+      )
+    };
+
+    setGameData(updatedGameData);
+    GameStorage.saveGame(updatedGameData);
+  };
+
+  const handleRefreshRecruits = () => {
+    if (!gameData) return;
+
+    const timeSinceLastRefresh = gameData.lastRecruitRefresh 
+      ? Math.floor((Date.now() - gameData.lastRecruitRefresh.getTime()) / (1000 * 60 * 60))
+      : 24;
+
+    const canRefreshFree = timeSinceLastRefresh >= 24;
+    const refreshCost = 50;
+
+    if (!canRefreshFree && gameData.guild.gold < refreshCost) {
+      alert('Pas assez d\'or pour actualiser la liste !');
+      return;
+    }
+
+    const updatedGameData = {
+      ...gameData,
+      availableRecruits: generateRecruitPool(),
+      lastRecruitRefresh: new Date(),
+      guild: {
+        ...gameData.guild,
+        gold: canRefreshFree ? gameData.guild.gold : gameData.guild.gold - refreshCost
+      }
+    };
+
+    setGameData(updatedGameData);
+    GameStorage.saveGame(updatedGameData);
+  };
+
   const navigationItems = [
     { id: 'overview' as const, label: 'Vue d\'ensemble', icon: Crown },
     { id: 'guild' as const, label: 'Guilde', icon: Home },
     { id: 'teams' as const, label: 'Équipes', icon: Users },
     { id: 'quests' as const, label: 'Quêtes', icon: Map },
+    { id: 'recruitment' as const, label: 'Recrutement', icon: UserPlus },
     { id: 'inventory' as const, label: 'Inventaire', icon: Package },
     { id: 'settings' as const, label: 'Paramètres', icon: Settings },
   ];
@@ -101,6 +201,14 @@ function App() {
         return <TeamsPanel gameData={gameData} />;
       case 'quests':
         return <QuestsPanel gameData={gameData} />;
+      case 'recruitment':
+        return (
+          <RecruitmentPanel 
+            gameData={gameData} 
+            onRecruit={handleRecruit}
+            onRefreshRecruits={handleRefreshRecruits}
+          />
+        );
       case 'inventory':
         return <InventoryPanel gameData={gameData} />;
       case 'character-details':

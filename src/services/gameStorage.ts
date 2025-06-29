@@ -1,6 +1,7 @@
 import { GameSave, PlayerLeader, Guild, Character, Team, ActiveQuest, Quest } from '../types';
 import { playerLeaders } from '../data/playerLeaders';
 import { mockBuildings } from '../data/mockData';
+import { generateRecruitPool } from '../data/recruitableCharacters';
 
 const STORAGE_KEY = 'dnd_guild_manager_save';
 
@@ -29,6 +30,10 @@ export class GameStorage {
         gameData.lastSave = new Date(gameData.lastSave);
       }
       
+      if (gameData.lastRecruitRefresh) {
+        gameData.lastRecruitRefresh = new Date(gameData.lastRecruitRefresh);
+      }
+      
       // Reconstituer les dates des personnages
       if (gameData.characters) {
         gameData.characters = gameData.characters.map((char: any) => ({
@@ -51,6 +56,12 @@ export class GameStorage {
           ...building,
           upgradeStartTime: building.upgradeStartTime ? new Date(building.upgradeStartTime) : undefined
         }));
+      }
+
+      // S'assurer que les recrues sont initialisées
+      if (!gameData.availableRecruits) {
+        gameData.availableRecruits = generateRecruitPool();
+        gameData.lastRecruitRefresh = new Date();
       }
 
       return gameData;
@@ -102,7 +113,9 @@ export class GameStorage {
       completedQuests: [],
       gameTime: 0,
       lastSave: new Date(),
-      achievements: []
+      achievements: [],
+      availableRecruits: generateRecruitPool(),
+      lastRecruitRefresh: new Date()
     };
 
     return newGame;

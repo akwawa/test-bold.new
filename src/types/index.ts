@@ -62,6 +62,8 @@ export interface Team {
   status: 'available' | 'on_quest' | 'resting';
   specialty: string;
   experience: number;
+  reputation: number; // Nouvelle propriété pour la notoriété de l'équipe
+  questsCompleted: number; // Nombre de quêtes terminées par l'équipe
 }
 
 export type QuestType = 'Nettoyage' | 'Chasse' | 'Escorte' | 'Combat' | 'Diplomatie' | 'Religieux' | 'Donjon' | 'Donjon Épique' | 'Récupération' | 'Patrouille' | 'Prestige';
@@ -78,7 +80,7 @@ export interface Quest {
   rank?: number;
   requiredLevel: number;
   requiredReputation?: number;
-  status: 'available' | 'in_progress' | 'completed' | 'expired';
+  status: 'available' | 'in_progress' | 'completed' | 'expired' | 'awaiting_collection';
   assignedTeam?: Team;
   startTime?: Date;
   progress?: number; // 0-100
@@ -88,6 +90,8 @@ export interface Quest {
   artifact?: string;
   expirationCycle?: number | null; // Cycle d'expiration
   isDaily?: boolean;
+  experienceReward?: number; // Expérience gagnée par la quête
+  completionCycle?: number; // Cycle de fin de la quête
 }
 
 export interface ActiveQuest extends Quest {
@@ -98,24 +102,14 @@ export interface ActiveQuest extends Quest {
   progress: number;
 }
 
-export interface QuestTemplate {
-  id: string;
-  title: string;
-  descriptionTemplate: string;
-  type: QuestType;
-  rank: number; // 1-4 (Débutant, Intermédiaire, Avancé, Expert)
-  baseDifficulty: number;
-  baseDuration: number;
-  baseReward: number;
-  requiredLevel: number;
-  requiredReputation: number;
-  enemies: string[];
-  locations: string[];
-  rarity: 'common' | 'rare' | 'epic' | 'legendary';
-  availabilityDays: number; // Nombre de jours avant expiration
-  spawnChance: number; // 0-1, chance d'apparition
-  artifacts?: string[];
-  isDaily?: boolean;
+export interface CompletedQuest extends Quest {
+  status: 'completed' | 'awaiting_collection';
+  assignedTeam: Team;
+  startCycle: number;
+  completionCycle: number;
+  experienceReward: number;
+  success: boolean; // Si la quête a été réussie ou échouée
+  actualReward: number; // Récompense finale (peut être réduite en cas d'échec)
 }
 
 export interface Building {
@@ -185,6 +179,26 @@ export interface GameCycle {
   totalCycles: number; // Nombre total de cycles écoulés
 }
 
+export interface QuestTemplate {
+  id: string;
+  title: string;
+  descriptionTemplate: string;
+  type: QuestType;
+  rank: number; // 1-4 (Débutant, Intermédiaire, Avancé, Expert)
+  baseDifficulty: number;
+  baseDuration: number;
+  baseReward: number;
+  requiredLevel: number;
+  requiredReputation: number;
+  enemies: string[];
+  locations: string[];
+  rarity: 'common' | 'rare' | 'epic' | 'legendary';
+  availabilityDays: number; // Nombre de jours avant expiration
+  spawnChance: number; // 0-1, chance d'apparition
+  artifacts?: string[];
+  isDaily?: boolean;
+}
+
 export interface GameSave {
   playerId: string;
   playerLeader: PlayerLeader;
@@ -192,7 +206,7 @@ export interface GameSave {
   characters: Character[];
   teams: Team[];
   activeQuests: ActiveQuest[];
-  completedQuests: Quest[];
+  completedQuests: CompletedQuest[]; // Changé pour utiliser CompletedQuest
   availableQuests: Quest[]; // Quêtes générées disponibles
   cycle: GameCycle; // Remplace gameTime
   lastSave: Date;

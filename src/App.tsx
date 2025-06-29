@@ -279,7 +279,7 @@ function App() {
 
     switch (activePanel) {
       case 'overview':
-        return <OverviewPanel onViewCharacterDetails={handleViewCharacterDetails} gameData={gameData} />;
+        return <OverviewPanel onViewCharacterDetails={handleViewCharacterDetails} gameData={gameData} onUpdateGameData={handleUpdateGameData} />;
       case 'guild':
         return <GuildPanel gameData={gameData} />;
       case 'teams':
@@ -331,7 +331,7 @@ function App() {
                       </div>
                     </div>
                     <div className="bg-stone-50 rounded-lg p-3 text-center">
-                      <div className="font-bold text-stone-800">{gameData.completedQuests.length}</div>
+                      <div className="font-bold text-stone-800">{gameData.completedQuests.filter(q => q.status === 'completed').length}</div>
                       <div className="text-stone-600 text-sm">Quêtes terminées</div>
                     </div>
                   </div>
@@ -381,7 +381,7 @@ function App() {
           </div>
         );
       default:
-        return <OverviewPanel onViewCharacterDetails={handleViewCharacterDetails} gameData={gameData} />;
+        return <OverviewPanel onViewCharacterDetails={handleViewCharacterDetails} gameData={gameData} onUpdateGameData={handleUpdateGameData} />;
     }
   };
 

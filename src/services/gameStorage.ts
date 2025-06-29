@@ -1,8 +1,9 @@
-import { GameSave, PlayerLeader, Guild, Character, Team, ActiveQuest, Quest, GameCycle } from '../types';
+import { GameSave, PlayerLeader, Guild, Character, Team, ActiveQuest, Quest, GameCycle, CompletedQuest } from '../types';
 import { playerLeaders } from '../data/playerLeaders';
 import { mockBuildings } from '../data/mockData';
 import { generateRecruitPool } from '../data/recruitableCharacters';
 import { QuestGenerator } from './questGenerator';
+import { ExperienceSystem } from './experienceSystem';
 
 const STORAGE_KEY = 'dnd_guild_manager_save';
 
@@ -75,6 +76,15 @@ export class GameStorage {
       // S'assurer que lastRecruitRefreshCycle existe
       if (gameData.lastRecruitRefreshCycle === undefined) {
         gameData.lastRecruitRefreshCycle = gameData.cycle.totalCycles;
+      }
+
+      // Migrer les équipes pour ajouter les nouvelles propriétés
+      if (gameData.teams) {
+        gameData.teams = gameData.teams.map((team: any) => ({
+          ...team,
+          reputation: team.reputation || 0,
+          questsCompleted: team.questsCompleted || 0
+        }));
       }
 
       // Migrer les quêtes actives vers le système de cycles
@@ -228,15 +238,42 @@ export class GameStorage {
     });
 
     // Terminer les quêtes complétées
-    const completedQuests = updatedActiveQuests.filter(quest => quest.cyclesRemaining <= 0);
+    const finishedQuests = updatedActiveQuests.filter(quest => quest.cyclesRemaining <= 0);
     const stillActiveQuests = updatedActiveQuests.filter(quest => quest.cyclesRemaining > 0);
 
-    // Libérer les équipes et personnages des quêtes terminées
+    // Convertir les quêtes terminées en quêtes complétées avec calcul de succès
+    const newCompletedQuests: CompletedQuest[] = finishedQuests.map(quest => {
+      const success = ExperienceSystem.determineQuestSuccess(quest.assignedTeam, quest);
+      const experienceReward = ExperienceSystem.calculateQuestExperience(quest);
+      
+      // Appliquer les bonus du dirigeant aux récompenses
+      let actualReward = quest.reward;
+      gameData.playerLeader.bonuses.forEach(bonus => {
+        if (bonus.type === 'quest_rewards') {
+          actualReward = Math.round(actualReward * (1 + bonus.value / 100));
+        }
+      });
+
+      // Réduire les récompenses en cas d'échec
+      if (!success) {
+        actualReward = Math.round(actualReward * 0.3); // 30% des récompenses en cas d'échec
+      }
+
+      return {
+        ...quest,
+        status: 'awaiting_collection' as const,
+        completionCycle: newCycle.totalCycles,
+        experienceReward,
+        success,
+        actualReward
+      };
+    });
+
+    // Libérer les équipes et personnages des quêtes terminées (mais pas encore collectées)
     let updatedTeams = [...gameData.teams];
     let updatedCharacters = [...gameData.characters];
-    let updatedGuild = { ...gameData.guild };
 
-    completedQuests.forEach(quest => {
+    finishedQuests.forEach(quest => {
       // Libérer l'équipe
       updatedTeams = updatedTeams.map(team => 
         team.id === quest.assignedTeam.id 
@@ -252,17 +289,10 @@ export class GameStorage {
             : char
         );
       });
-
-      // Ajouter les récompenses
-      updatedGuild = {
-        ...updatedGuild,
-        gold: updatedGuild.gold + quest.reward,
-        experience: updatedGuild.experience + (quest.difficulty * 50),
-        reputation: updatedGuild.reputation + (quest.difficulty * 10)
-      };
     });
 
     // Mettre à jour les bâtiments en amélioration
+    let updatedGuild = { ...gameData.guild };
     const updatedBuildings = gameData.guild.buildings.map(building => {
       if (building.isUpgrading && building.upgradeStartCycle !== undefined) {
         const cyclesElapsed = newCycle.totalCycles - building.upgradeStartCycle;
@@ -285,7 +315,7 @@ export class GameStorage {
       ...gameData,
       cycle: newCycle,
       activeQuests: stillActiveQuests,
-      completedQuests: [...gameData.completedQuests, ...completedQuests],
+      completedQuests: [...gameData.completedQuests, ...newCompletedQuests],
       teams: updatedTeams,
       characters: updatedCharacters,
       guild: updatedGuild
@@ -295,5 +325,46 @@ export class GameStorage {
     updatedGameData = QuestGenerator.updateQuestPool(updatedGameData);
 
     return updatedGameData;
+  }
+
+  // Nouvelle méthode pour collecter les récompenses d'une quête
+  static collectQuestReward(gameData: GameSave, questId: string | number): GameSave {
+    const questIndex = gameData.completedQuests.findIndex(q => q.id === questId && q.status === 'awaiting_collection');
+    
+    if (questIndex === -1) {
+      return gameData; // Quête non trouvée ou déjà collectée
+    }
+
+    const quest = gameData.completedQuests[questIndex];
+    
+    // Distribuer l'expérience
+    const { updatedCharacters, updatedTeams } = ExperienceSystem.distributeQuestExperience(
+      quest, 
+      gameData.characters, 
+      gameData.teams
+    );
+
+    // Ajouter les récompenses à la guilde
+    const updatedGuild = {
+      ...gameData.guild,
+      gold: gameData.guild.gold + quest.actualReward,
+      experience: gameData.guild.experience + (quest.difficulty * 50),
+      reputation: gameData.guild.reputation + (quest.success ? quest.difficulty * 10 : quest.difficulty * 2)
+    };
+
+    // Marquer la quête comme collectée
+    const updatedCompletedQuests = [...gameData.completedQuests];
+    updatedCompletedQuests[questIndex] = {
+      ...quest,
+      status: 'completed'
+    };
+
+    return {
+      ...gameData,
+      characters: updatedCharacters,
+      teams: updatedTeams,
+      guild: updatedGuild,
+      completedQuests: updatedCompletedQuests
+    };
   }
 }

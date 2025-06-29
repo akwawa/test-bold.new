@@ -64,19 +64,30 @@ export interface Team {
   experience: number;
 }
 
+export type QuestType = 'Nettoyage' | 'Chasse' | 'Escorte' | 'Combat' | 'Diplomatie' | 'Religieux' | 'Donjon' | 'Donjon Épique' | 'Récupération' | 'Patrouille' | 'Prestige';
+
 export interface Quest {
-  id: number;
+  id: number | string;
+  templateId?: string;
   title: string;
   description: string;
   difficulty: number;
   duration: number; // en cycles
   reward: number;
-  type: string;
+  type: QuestType;
+  rank?: number;
   requiredLevel: number;
-  status: 'available' | 'in_progress' | 'completed';
+  requiredReputation?: number;
+  status: 'available' | 'in_progress' | 'completed' | 'expired';
   assignedTeam?: Team;
   startTime?: Date;
   progress?: number; // 0-100
+  rarity?: 'common' | 'rare' | 'epic' | 'legendary';
+  enemy?: string;
+  location?: string;
+  artifact?: string;
+  expirationCycle?: number | null; // Cycle d'expiration
+  isDaily?: boolean;
 }
 
 export interface ActiveQuest extends Quest {
@@ -85,6 +96,26 @@ export interface ActiveQuest extends Quest {
   startCycle: number; // Cycle de début
   cyclesRemaining: number; // Cycles restants
   progress: number;
+}
+
+export interface QuestTemplate {
+  id: string;
+  title: string;
+  descriptionTemplate: string;
+  type: QuestType;
+  rank: number; // 1-4 (Débutant, Intermédiaire, Avancé, Expert)
+  baseDifficulty: number;
+  baseDuration: number;
+  baseReward: number;
+  requiredLevel: number;
+  requiredReputation: number;
+  enemies: string[];
+  locations: string[];
+  rarity: 'common' | 'rare' | 'epic' | 'legendary';
+  availabilityDays: number; // Nombre de jours avant expiration
+  spawnChance: number; // 0-1, chance d'apparition
+  artifacts?: string[];
+  isDaily?: boolean;
 }
 
 export interface Building {
@@ -162,12 +193,14 @@ export interface GameSave {
   teams: Team[];
   activeQuests: ActiveQuest[];
   completedQuests: Quest[];
+  availableQuests: Quest[]; // Quêtes générées disponibles
   cycle: GameCycle; // Remplace gameTime
   lastSave: Date;
   achievements: string[];
   availableRecruits: RecruitableCharacter[]; // Personnages disponibles au recrutement
   lastRecruitRefresh: Date; // Dernière actualisation des recrues (legacy)
   lastRecruitRefreshCycle?: number; // Cycle de la dernière actualisation des recrues
+  lastQuestGeneration?: number; // Dernier cycle de génération de quêtes
 }
 
 // Nouvelles interfaces pour le système de progression

@@ -108,6 +108,13 @@ function App() {
         savedGame.lastRecruitRefresh = new Date();
         savedGame.lastRecruitRefreshCycle = savedGame.cycle.totalCycles;
       }
+      
+      // S'assurer que les quêtes sont initialisées
+      if (!savedGame.availableQuests) {
+        savedGame.availableQuests = [];
+        savedGame.lastQuestGeneration = 0;
+      }
+      
       setGameData(savedGame);
       setGameState('playing');
     }

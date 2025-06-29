@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Map, Clock, Star, Coins, Users, Skull, Shield, Sword, Crown, Lock, X, Check, AlertTriangle, Sun, Moon } from 'lucide-react';
-import { GameSave, Team, ActiveQuest } from '../types';
+import { Map, Clock, Star, Coins, Users, Skull, Shield, Sword, Crown, Lock, X, Check, AlertTriangle, Sun, Moon, Calendar, Trophy, Zap } from 'lucide-react';
+import { GameSave, Team, ActiveQuest, Quest } from '../types';
+import { QuestGenerator } from '../services/questGenerator';
 
 interface QuestsPanelProps {
   gameData: GameSave;
@@ -9,146 +10,15 @@ interface QuestsPanelProps {
 
 const QuestsPanel: React.FC<QuestsPanelProps> = ({ gameData, onUpdateGameData }) => {
   const [showAssignModal, setShowAssignModal] = useState(false);
-  const [selectedQuest, setSelectedQuest] = useState<any>(null);
+  const [selectedQuest, setSelectedQuest] = useState<Quest | null>(null);
   const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
+  const [activeTab, setActiveTab] = useState<'available' | 'locked'>('available');
 
-  const allQuests = [
-    {
-      id: 1,
-      title: 'Les Cryptes de Château-Suif',
-      description: 'Explorez les cryptes hantées sous l\'ancien château et éliminez le nécromancien qui terrorise la région.',
-      difficulty: 4,
-      duration: 8, // 8 cycles (4 jours)
-      reward: 1200,
-      type: 'Donjon',
-      requiredLevel: 5,
-      maxGuildLevel: 4,
-      status: 'available' as const,
-      enemies: 'Squelettes, Zombies, Nécromancien'
-    },
-    {
-      id: 2,
-      title: 'Raid Orque sur Pierrehavre',
-      description: 'Défendez le paisible village de Pierrehavre contre une horde d\'orques menée par un chef de guerre brutal.',
-      difficulty: 3,
-      duration: 6, // 6 cycles (3 jours)
-      reward: 800,
-      type: 'Combat',
-      requiredLevel: 4,
-      maxGuildLevel: 3,
-      status: 'available' as const,
-      enemies: 'Orques, Chef de Guerre Orque'
-    },
-    {
-      id: 3,
-      title: 'Le Trésor du Dragon Vert',
-      description: 'Infiltrez le repaire de Chlorophylle l\'Ancienne et dérobez une partie de son trésor légendaire.',
-      difficulty: 5,
-      duration: 12, // 12 cycles (6 jours)
-      reward: 2500,
-      type: 'Donjon',
-      requiredLevel: 7,
-      maxGuildLevel: 5,
-      status: 'available' as const,
-      enemies: 'Dragon Vert Ancien, Kobolds, Pièges'
-    },
-    {
-      id: 4,
-      title: 'Escorte de Caravane',
-      description: 'Escortez une caravane marchande à travers les Terres Sauvages infestées de bandits et de monstres.',
-      difficulty: 2,
-      duration: 4, // 4 cycles (2 jours)
-      reward: 450,
-      type: 'Escorte',
-      requiredLevel: 3,
-      maxGuildLevel: 2,
-      status: 'available' as const,
-      enemies: 'Bandits, Loups, Gobelins'
-    },
-    {
-      id: 5,
-      title: 'Négociation avec les Elfes',
-      description: 'Négociez un traité commercial avec les Seigneurs Elfes de la Cour d\'Été dans leur domaine féerique.',
-      difficulty: 3,
-      duration: 3, // 3 cycles (1.5 jours)
-      reward: 600,
-      type: 'Diplomatie',
-      requiredLevel: 4,
-      maxGuildLevel: 3,
-      status: 'available' as const,
-      enemies: 'Aucun (Négociation)'
-    },
-    {
-      id: 6,
-      title: 'Purification du Temple Maudit',
-      description: 'Purifiez l\'ancien temple de Lathandre souillé par des cultistes de Cyric et leurs démons.',
-      difficulty: 4,
-      duration: 7, // 7 cycles (3.5 jours)
-      reward: 1000,
-      type: 'Religieux',
-      requiredLevel: 5,
-      maxGuildLevel: 4,
-      status: 'available' as const,
-      enemies: 'Cultistes, Démons Mineurs, Prêtre Déchu'
-    },
-    {
-      id: 7,
-      title: 'Contrat de Nettoyage - Rats Géants',
-      description: 'Éliminez l\'infestation de rats géants dans les égouts de la ville.',
-      difficulty: 1,
-      duration: 2, // 2 cycles (1 jour)
-      reward: 200,
-      type: 'Nettoyage',
-      requiredLevel: 1,
-      maxGuildLevel: 1,
-      status: 'available' as const,
-      enemies: 'Rats Géants, Rats-Garous'
-    },
-    {
-      id: 8,
-      title: 'Chasse aux Gobelins',
-      description: 'Traquez et éliminez une bande de gobelins qui attaque les fermes locales.',
-      difficulty: 2,
-      duration: 3, // 3 cycles (1.5 jours)
-      reward: 350,
-      type: 'Chasse',
-      requiredLevel: 2,
-      maxGuildLevel: 2,
-      status: 'available' as const,
-      enemies: 'Gobelins, Chef Gobelin'
-    },
-    {
-      id: 9,
-      title: 'L\'Antre du Liche Ancien',
-      description: 'Affrontez un liche millénaire dans son donjon fortifié, gardé par des légions de morts-vivants.',
-      difficulty: 5,
-      duration: 16, // 16 cycles (8 jours)
-      reward: 5000,
-      type: 'Donjon Épique',
-      requiredLevel: 10,
-      maxGuildLevel: 6,
-      status: 'available' as const,
-      enemies: 'Liche Ancien, Dracoliche, Armée de Morts-Vivants'
-    },
-    {
-      id: 10,
-      title: 'Récupération d\'Artefact',
-      description: 'Récupérez un artefact magique volé dans une tour de mage abandonnée.',
-      difficulty: 3,
-      duration: 5, // 5 cycles (2.5 jours)
-      reward: 750,
-      type: 'Récupération',
-      requiredLevel: 4,
-      maxGuildLevel: 3,
-      status: 'available' as const,
-      enemies: 'Golems, Élémentaires, Pièges Magiques'
-    }
-  ];
-
-  // Filtrer les quêtes selon le niveau de la guilde
-  const availableQuests = allQuests.filter(quest => quest.maxGuildLevel <= gameData.guild.level);
-  const lockedQuests = allQuests.filter(quest => quest.maxGuildLevel > gameData.guild.level);
-
+  // Obtenir les quêtes visibles et verrouillées
+  const visibleQuests = QuestGenerator.getVisibleQuests(gameData);
+  const maxRank = QuestGenerator.getMaxAccessibleRank(gameData.guild.reputation, gameData.guild.level);
+  const questsByRank = QuestGenerator.getQuestsByRank(visibleQuests);
+  
   // Équipes disponibles pour assignation
   const availableTeams = gameData.teams.filter(team => team.status === 'available');
 
@@ -157,6 +27,36 @@ const QuestsPanel: React.FC<QuestsPanelProps> = ({ gameData, onUpdateGameData })
     if (difficulty <= 3) return 'text-yellow-600 bg-yellow-100';
     if (difficulty <= 4) return 'text-orange-600 bg-orange-100';
     return 'text-red-600 bg-red-100';
+  };
+
+  const getRarityColor = (rarity?: string) => {
+    switch (rarity) {
+      case 'common': return 'text-stone-600 bg-stone-100 border-stone-300';
+      case 'rare': return 'text-blue-600 bg-blue-100 border-blue-300';
+      case 'epic': return 'text-purple-600 bg-purple-100 border-purple-300';
+      case 'legendary': return 'text-yellow-600 bg-yellow-100 border-yellow-300';
+      default: return 'text-stone-600 bg-stone-100 border-stone-300';
+    }
+  };
+
+  const getRankColor = (rank: number) => {
+    switch (rank) {
+      case 1: return 'text-green-700 bg-green-100';
+      case 2: return 'text-blue-700 bg-blue-100';
+      case 3: return 'text-purple-700 bg-purple-100';
+      case 4: return 'text-red-700 bg-red-100';
+      default: return 'text-stone-700 bg-stone-100';
+    }
+  };
+
+  const getRankLabel = (rank: number) => {
+    switch (rank) {
+      case 1: return 'Débutant';
+      case 2: return 'Intermédiaire';
+      case 3: return 'Avancé';
+      case 4: return 'Expert';
+      default: return 'Inconnu';
+    }
   };
 
   const getTypeColor = (type: string) => {
@@ -170,6 +70,8 @@ const QuestsPanel: React.FC<QuestsPanelProps> = ({ gameData, onUpdateGameData })
       case 'Chasse': return 'text-orange-700 bg-orange-100';
       case 'Récupération': return 'text-indigo-700 bg-indigo-100';
       case 'Nettoyage': return 'text-stone-700 bg-stone-100';
+      case 'Patrouille': return 'text-cyan-700 bg-cyan-100';
+      case 'Prestige': return 'text-pink-700 bg-pink-100';
       default: return 'text-stone-700 bg-stone-100';
     }
   };
@@ -185,6 +87,8 @@ const QuestsPanel: React.FC<QuestsPanelProps> = ({ gameData, onUpdateGameData })
       case 'Chasse': return <Map className="h-4 w-4" />;
       case 'Récupération': return <Coins className="h-4 w-4" />;
       case 'Nettoyage': return <Sword className="h-4 w-4" />;
+      case 'Patrouille': return <Users className="h-4 w-4" />;
+      case 'Prestige': return <Trophy className="h-4 w-4" />;
       default: return <Map className="h-4 w-4" />;
     }
   };
@@ -217,6 +121,15 @@ const QuestsPanel: React.FC<QuestsPanelProps> = ({ gameData, onUpdateGameData })
     }
   };
 
+  const formatExpirationTime = (quest: Quest): string => {
+    if (!quest.expirationCycle) return 'Permanent';
+    
+    const cyclesRemaining = quest.expirationCycle - gameData.cycle.totalCycles;
+    if (cyclesRemaining <= 0) return 'Expiré';
+    
+    return `Expire dans ${formatCycleTime(cyclesRemaining)}`;
+  };
+
   // Appliquer les bonus du dirigeant
   const getAdjustedReward = (baseReward: number, questType: string): number => {
     let multiplier = 1;
@@ -241,7 +154,7 @@ const QuestsPanel: React.FC<QuestsPanelProps> = ({ gameData, onUpdateGameData })
   };
 
   // Calculer les chances de succès d'une équipe pour une quête
-  const calculateSuccessChance = (team: Team, quest: any): number => {
+  const calculateSuccessChance = (team: Team, quest: Quest): number => {
     const teamLevel = team.level;
     const questLevel = quest.requiredLevel;
     const difficulty = quest.difficulty;
@@ -287,7 +200,7 @@ const QuestsPanel: React.FC<QuestsPanelProps> = ({ gameData, onUpdateGameData })
     return 'text-red-600';
   };
 
-  const handleAssignQuest = (quest: any) => {
+  const handleAssignQuest = (quest: Quest) => {
     setSelectedQuest(quest);
     setSelectedTeam(null);
     setShowAssignModal(true);
@@ -320,11 +233,15 @@ const QuestsPanel: React.FC<QuestsPanelProps> = ({ gameData, onUpdateGameData })
         : character;
     });
 
+    // Retirer la quête de la liste des quêtes disponibles
+    const updatedAvailableQuests = gameData.availableQuests.filter(q => q.id !== selectedQuest.id);
+
     const updatedGameData = {
       ...gameData,
       teams: updatedTeams,
       characters: updatedCharacters,
-      activeQuests: [...gameData.activeQuests, newActiveQuest]
+      activeQuests: [...gameData.activeQuests, newActiveQuest],
+      availableQuests: updatedAvailableQuests
     };
 
     onUpdateGameData(updatedGameData);
@@ -362,26 +279,37 @@ const QuestsPanel: React.FC<QuestsPanelProps> = ({ gameData, onUpdateGameData })
     }
   };
 
-  const renderQuestCard = (quest: any, isLocked: boolean = false) => {
+  const renderQuestCard = (quest: Quest) => {
     const adjustedReward = getAdjustedReward(quest.reward, quest.type);
     const isInProgress = gameData.activeQuests.some(aq => aq.id === quest.id);
-    const canAssign = availableTeams.length > 0 && !isLocked && !isInProgress;
+    const canAssign = availableTeams.length > 0 && !isInProgress;
+    const isExpired = quest.expirationCycle && gameData.cycle.totalCycles >= quest.expirationCycle;
     
     return (
-      <div key={quest.id} className={`bg-white rounded-xl shadow-lg border border-stone-200 overflow-hidden hover:shadow-xl transition-shadow ${isLocked ? 'opacity-60' : ''}`}>
+      <div key={quest.id} className={`bg-white rounded-xl shadow-lg border border-stone-200 overflow-hidden hover:shadow-xl transition-shadow ${isExpired ? 'opacity-60' : ''}`}>
         <div className="p-6">
           <div className="flex items-start justify-between mb-4">
             <div className="flex-1">
               <div className="flex items-center space-x-2 mb-2">
                 <h3 className="text-xl font-bold text-stone-800">{quest.title}</h3>
-                {isLocked && <Lock className="h-5 w-5 text-stone-400" />}
+                {quest.isDaily && <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">Quotidien</span>}
+                {isExpired && <span className="text-xs bg-red-100 text-red-800 px-2 py-1 rounded-full">Expiré</span>}
               </div>
               <p className="text-stone-600 text-sm leading-relaxed mb-3">{quest.description}</p>
               
-              <div className="flex items-center space-x-2 mb-2">
-                <span className="text-stone-500 text-sm font-medium">Ennemis:</span>
-                <span className="text-stone-700 text-sm">{quest.enemies}</span>
-              </div>
+              {quest.enemy && (
+                <div className="flex items-center space-x-2 mb-2">
+                  <span className="text-stone-500 text-sm font-medium">Ennemis:</span>
+                  <span className="text-stone-700 text-sm">{quest.enemy}</span>
+                </div>
+              )}
+              
+              {quest.location && (
+                <div className="flex items-center space-x-2 mb-2">
+                  <span className="text-stone-500 text-sm font-medium">Lieu:</span>
+                  <span className="text-stone-700 text-sm">{quest.location}</span>
+                </div>
+              )}
             </div>
             <div className="ml-4 text-center">
               {getTypeIcon(quest.type)}
@@ -390,6 +318,11 @@ const QuestsPanel: React.FC<QuestsPanelProps> = ({ gameData, onUpdateGameData })
           </div>
 
           <div className="flex flex-wrap gap-2 mb-4">
+            {quest.rank && (
+              <span className={`px-3 py-1 rounded-full text-xs font-medium ${getRankColor(quest.rank)}`}>
+                {getRankLabel(quest.rank)}
+              </span>
+            )}
             <span className={`px-3 py-1 rounded-full text-xs font-medium flex items-center space-x-1 ${getTypeColor(quest.type)}`}>
               {getTypeIcon(quest.type)}
               <span>{quest.type}</span>
@@ -399,10 +332,9 @@ const QuestsPanel: React.FC<QuestsPanelProps> = ({ gameData, onUpdateGameData })
                 {getDifficultyStars(quest.difficulty)}
               </div>
             </div>
-            {isLocked && (
-              <span className="px-3 py-1 rounded-full text-xs font-medium bg-stone-200 text-stone-600 flex items-center space-x-1">
-                <Lock className="h-3 w-3" />
-                <span>Niveau {quest.maxGuildLevel} requis</span>
+            {quest.rarity && (
+              <span className={`px-3 py-1 rounded-full text-xs font-medium border ${getRarityColor(quest.rarity)}`}>
+                {quest.rarity}
               </span>
             )}
             {isInProgress && (
@@ -423,10 +355,10 @@ const QuestsPanel: React.FC<QuestsPanelProps> = ({ gameData, onUpdateGameData })
             <div className="flex items-center space-x-2 text-stone-600">
               <Coins className="h-4 w-4 text-yellow-500" />
               <span>
-                {!isLocked && adjustedReward !== quest.reward && (
+                {adjustedReward !== quest.reward && (
                   <span className="line-through text-stone-400 mr-1">{quest.reward}</span>
                 )}
-                {isLocked ? quest.reward : adjustedReward} po
+                {adjustedReward} po
               </span>
             </div>
             <div className="flex items-center space-x-2 text-stone-600">
@@ -435,13 +367,15 @@ const QuestsPanel: React.FC<QuestsPanelProps> = ({ gameData, onUpdateGameData })
             </div>
           </div>
 
+          {quest.expirationCycle && (
+            <div className="mb-4 text-xs text-stone-500 flex items-center space-x-1">
+              <Calendar className="h-3 w-3" />
+              <span>{formatExpirationTime(quest)}</span>
+            </div>
+          )}
+
           <div className="flex space-x-2">
-            {isLocked ? (
-              <button className="flex-1 bg-stone-200 text-stone-500 py-2 px-4 rounded-lg font-medium cursor-not-allowed flex items-center justify-center space-x-2">
-                <Lock className="h-4 w-4" />
-                <span>Guilde niveau {quest.maxGuildLevel} requis</span>
-              </button>
-            ) : !isInProgress ? (
+            {!isExpired && !isInProgress ? (
               <>
                 <button 
                   onClick={() => handleAssignQuest(quest)}
@@ -460,7 +394,7 @@ const QuestsPanel: React.FC<QuestsPanelProps> = ({ gameData, onUpdateGameData })
               </>
             ) : (
               <button className="flex-1 bg-stone-300 text-stone-500 py-2 px-4 rounded-lg font-medium cursor-not-allowed">
-                En cours...
+                {isExpired ? 'Expiré' : 'En cours...'}
               </button>
             )}
           </div>
@@ -474,11 +408,15 @@ const QuestsPanel: React.FC<QuestsPanelProps> = ({ gameData, onUpdateGameData })
       <div className="mb-6">
         <h2 className="text-3xl font-bold text-stone-800 font-fantasy">Contrats Disponibles</h2>
         <div className="flex items-center justify-between mt-2">
-          <p className="text-stone-600">Choisissez des quêtes pour vos équipes d'aventuriers</p>
+          <p className="text-stone-600">Quêtes générées dynamiquement selon votre réputation</p>
           <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-2 bg-fantasy-100 px-3 py-1 rounded-lg">
               <Crown className="h-4 w-4 text-fantasy-600" />
-              <span className="text-fantasy-800 font-medium">Guilde Niveau {gameData.guild.level}</span>
+              <span className="text-fantasy-800 font-medium">Rang {maxRank} - {getRankLabel(maxRank)}</span>
+            </div>
+            <div className="flex items-center space-x-2 bg-purple-100 px-3 py-1 rounded-lg">
+              <Trophy className="h-4 w-4 text-purple-600" />
+              <span className="text-purple-800 font-medium">{gameData.guild.reputation} réputation</span>
             </div>
             <div className="flex items-center space-x-2 bg-green-100 px-3 py-1 rounded-lg">
               <Users className="h-4 w-4 text-green-600" />
@@ -495,24 +433,14 @@ const QuestsPanel: React.FC<QuestsPanelProps> = ({ gameData, onUpdateGameData })
       </div>
 
       {/* Statistiques des quêtes */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
         <div className="bg-white rounded-xl shadow-lg p-4 border border-stone-200">
           <div className="flex items-center justify-between">
             <div>
               <h4 className="font-bold text-stone-800">Quêtes Disponibles</h4>
-              <p className="text-2xl font-bold text-green-600">{availableQuests.length}</p>
+              <p className="text-2xl font-bold text-green-600">{visibleQuests.length}</p>
             </div>
             <Map className="h-8 w-8 text-green-500" />
-          </div>
-        </div>
-        
-        <div className="bg-white rounded-xl shadow-lg p-4 border border-stone-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <h4 className="font-bold text-stone-800">Quêtes Verrouillées</h4>
-              <p className="text-2xl font-bold text-orange-600">{lockedQuests.length}</p>
-            </div>
-            <Lock className="h-8 w-8 text-orange-500" />
           </div>
         </div>
         
@@ -523,6 +451,26 @@ const QuestsPanel: React.FC<QuestsPanelProps> = ({ gameData, onUpdateGameData })
               <p className="text-2xl font-bold text-blue-600">{gameData.activeQuests.length}</p>
             </div>
             <Clock className="h-8 w-8 text-blue-500" />
+          </div>
+        </div>
+        
+        <div className="bg-white rounded-xl shadow-lg p-4 border border-stone-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <h4 className="font-bold text-stone-800">Terminées</h4>
+              <p className="text-2xl font-bold text-yellow-600">{gameData.completedQuests.length}</p>
+            </div>
+            <Trophy className="h-8 w-8 text-yellow-500" />
+          </div>
+        </div>
+
+        <div className="bg-white rounded-xl shadow-lg p-4 border border-stone-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <h4 className="font-bold text-stone-800">Quotidiennes</h4>
+              <p className="text-2xl font-bold text-purple-600">{visibleQuests.filter(q => q.isDaily).length}</p>
+            </div>
+            <Calendar className="h-8 w-8 text-purple-500" />
           </div>
         </div>
       </div>
@@ -542,26 +490,38 @@ const QuestsPanel: React.FC<QuestsPanelProps> = ({ gameData, onUpdateGameData })
         </div>
       )}
 
-      {/* Quêtes disponibles */}
-      {availableQuests.length > 0 && (
-        <div className="mb-8">
-          <h3 className="text-2xl font-bold text-stone-800 mb-4">🗺️ Contrats Accessibles</h3>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {availableQuests.map((quest) => renderQuestCard(quest, false))}
-          </div>
-        </div>
-      )}
+      {/* Quêtes par rang */}
+      {Object.keys(questsByRank).length > 0 ? (
+        <div className="space-y-8">
+          {[1, 2, 3, 4].map(rank => {
+            const rankQuests = questsByRank[rank] || [];
+            if (rankQuests.length === 0) return null;
 
-      {/* Quêtes verrouillées */}
-      {lockedQuests.length > 0 && (
-        <div className="mb-8">
-          <h3 className="text-2xl font-bold text-stone-800 mb-4">🔒 Contrats de Haut Niveau</h3>
-          <p className="text-stone-600 mb-4">
-            Ces quêtes nécessitent une guilde de niveau supérieur. Améliorez votre guilde pour y accéder !
+            return (
+              <div key={rank} className="mb-8">
+                <div className="flex items-center space-x-3 mb-4">
+                  <h3 className="text-2xl font-bold text-stone-800">
+                    {getRankLabel(rank)} (Rang {rank})
+                  </h3>
+                  <span className={`px-3 py-1 rounded-full text-sm font-medium ${getRankColor(rank)}`}>
+                    {rankQuests.length} quête{rankQuests.length > 1 ? 's' : ''}
+                  </span>
+                </div>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {rankQuests.map(quest => renderQuestCard(quest))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      ) : (
+        <div className="bg-white rounded-xl shadow-lg p-12 border border-stone-200 text-center">
+          <Map className="h-16 w-16 text-stone-400 mx-auto mb-4" />
+          <h3 className="text-xl font-bold text-stone-800 mb-2">Aucune quête disponible</h3>
+          <p className="text-stone-600 mb-6">
+            Aucune quête n'est actuellement disponible pour votre niveau de réputation.
+            Terminez des quêtes pour augmenter votre réputation et débloquer de nouveaux contrats.
           </p>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {lockedQuests.map((quest) => renderQuestCard(quest, true))}
-          </div>
         </div>
       )}
 
@@ -611,10 +571,19 @@ const QuestsPanel: React.FC<QuestsPanelProps> = ({ gameData, onUpdateGameData })
                       </div>
                     </div>
                     
-                    <div className="mt-3 pt-3 border-t border-stone-200">
-                      <span className="font-medium text-stone-600">Ennemis:</span>
-                      <div className="text-stone-800 mt-1">{selectedQuest.enemies}</div>
-                    </div>
+                    {selectedQuest.enemy && (
+                      <div className="mt-3 pt-3 border-t border-stone-200">
+                        <span className="font-medium text-stone-600">Ennemis:</span>
+                        <div className="text-stone-800 mt-1">{selectedQuest.enemy}</div>
+                      </div>
+                    )}
+
+                    {selectedQuest.expirationCycle && (
+                      <div className="mt-3 pt-3 border-t border-stone-200">
+                        <span className="font-medium text-stone-600">Expiration:</span>
+                        <div className="text-orange-600 mt-1">{formatExpirationTime(selectedQuest)}</div>
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -747,79 +716,30 @@ const QuestsPanel: React.FC<QuestsPanelProps> = ({ gameData, onUpdateGameData })
         </div>
       )}
 
-      {/* Progression de la guilde */}
-      <div className="bg-gradient-to-r from-fantasy-50 to-fantasy-100 rounded-xl p-6 border border-fantasy-200 mb-8">
-        <h3 className="text-xl font-bold text-fantasy-800 mb-4">📈 Progression de la Guilde</h3>
+      {/* Informations sur le système de génération */}
+      <div className="mt-8 bg-gradient-to-r from-fantasy-50 to-fantasy-100 rounded-xl p-6 border border-fantasy-200">
+        <h3 className="text-xl font-bold text-fantasy-800 mb-4 flex items-center space-x-2">
+          <Zap className="h-5 w-5" />
+          <span>Système de Génération Dynamique</span>
+        </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-fantasy-700 font-medium">Niveau actuel</span>
-              <span className="text-fantasy-800 font-bold">{gameData.guild.level}</span>
-            </div>
-            <div className="w-full bg-fantasy-200 rounded-full h-3">
-              <div
-                className="bg-fantasy-600 h-3 rounded-full transition-all"
-                style={{ width: `${Math.min((gameData.guild.experience % 1000) / 10, 100)}%` }}
-              />
-            </div>
-            <div className="text-fantasy-600 text-sm mt-1">
-              {gameData.guild.experience} / {(gameData.guild.level + 1) * 1000} XP
-            </div>
-          </div>
-          
-          <div>
-            <h4 className="font-bold text-fantasy-800 mb-2">Prochains déverrouillages :</h4>
+            <h4 className="font-bold text-fantasy-800 mb-2">Mécaniques :</h4>
             <div className="space-y-1 text-sm text-fantasy-700">
-              {lockedQuests.slice(0, 3).map((quest, index) => (
-                <div key={index} className="flex items-center space-x-2">
-                  <Lock className="h-3 w-3" />
-                  <span>Niveau {quest.maxGuildLevel}: {quest.title}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Légende des difficultés */}
-      <div className="bg-white rounded-xl shadow-lg p-6 border border-stone-200">
-        <h3 className="text-lg font-bold text-stone-800 mb-4">Guide des Difficultés et Cycles</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <h4 className="font-medium text-stone-700 mb-3">Niveaux de difficulté :</h4>
-            <div className="grid grid-cols-1 gap-2 text-sm">
-              {[
-                { stars: 1, label: 'Facile', color: 'text-green-600' },
-                { stars: 2, label: 'Modéré', color: 'text-green-600' },
-                { stars: 3, label: 'Difficile', color: 'text-yellow-600' },
-                { stars: 4, label: 'Très Difficile', color: 'text-orange-600' },
-                { stars: 5, label: 'Légendaire', color: 'text-red-600' }
-              ].map((difficulty) => (
-                <div key={difficulty.stars} className="flex items-center space-x-2">
-                  <div className="flex space-x-1">
-                    {getDifficultyStars(difficulty.stars)}
-                  </div>
-                  <span className={`font-medium ${difficulty.color}`}>{difficulty.label}</span>
-                </div>
-              ))}
+              <div>• Nouvelles quêtes générées tous les jours</div>
+              <div>• Quêtes quotidiennes basées sur la réputation</div>
+              <div>• Durée de vie limitée pour certaines quêtes</div>
+              <div>• Rang maximum accessible : {getRankLabel(maxRank)}</div>
             </div>
           </div>
           
           <div>
-            <h4 className="font-medium text-stone-700 mb-3">Système de cycles :</h4>
-            <div className="space-y-2 text-sm text-stone-600">
-              <div className="flex items-center space-x-2">
-                <Sun className="h-4 w-4 text-yellow-500" />
-                <span>1 cycle = 1 période (jour ou nuit)</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Moon className="h-4 w-4 text-blue-500" />
-                <span>2 cycles = 1 jour complet</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Clock className="h-4 w-4 text-stone-500" />
-                <span>Utilisez le bouton dans l'en-tête pour faire avancer le temps</span>
-              </div>
+            <h4 className="font-bold text-fantasy-800 mb-2">Progression :</h4>
+            <div className="space-y-1 text-sm text-fantasy-700">
+              <div>• Rang 2 : 300+ réputation, niveau 2+ guilde</div>
+              <div>• Rang 3 : 800+ réputation, niveau 4+ guilde</div>
+              <div>• Rang 4 : 2000+ réputation, niveau 5+ guilde</div>
+              <div>• Réputation actuelle : {gameData.guild.reputation}</div>
             </div>
           </div>
         </div>

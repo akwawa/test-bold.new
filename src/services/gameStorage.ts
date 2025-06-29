@@ -2,6 +2,7 @@ import { GameSave, PlayerLeader, Guild, Character, Team, ActiveQuest, Quest, Gam
 import { playerLeaders } from '../data/playerLeaders';
 import { mockBuildings } from '../data/mockData';
 import { generateRecruitPool } from '../data/recruitableCharacters';
+import { QuestGenerator } from './questGenerator';
 
 const STORAGE_KEY = 'dnd_guild_manager_save';
 
@@ -113,7 +114,16 @@ export class GameStorage {
         gameData.lastRecruitRefreshCycle = gameData.cycle.totalCycles;
       }
 
-      return gameData;
+      // Initialiser le système de quêtes dynamiques
+      if (!gameData.availableQuests) {
+        gameData.availableQuests = [];
+        gameData.lastQuestGeneration = 0;
+      }
+
+      // Mettre à jour le pool de quêtes
+      const updatedGameData = QuestGenerator.updateQuestPool(gameData);
+
+      return updatedGameData;
     } catch (error) {
       console.error('Erreur lors du chargement:', error);
       return null;
@@ -169,15 +179,20 @@ export class GameStorage {
       teams: [],
       activeQuests: [],
       completedQuests: [],
+      availableQuests: [],
       cycle: initialCycle,
       lastSave: new Date(),
       achievements: [],
       availableRecruits: generateRecruitPool(),
       lastRecruitRefresh: new Date(),
-      lastRecruitRefreshCycle: 0
+      lastRecruitRefreshCycle: 0,
+      lastQuestGeneration: 0
     };
 
-    return newGame;
+    // Générer les quêtes initiales
+    const updatedGame = QuestGenerator.updateQuestPool(newGame);
+
+    return updatedGame;
   }
 
   static autoSave(gameData: GameSave): void {
@@ -242,7 +257,8 @@ export class GameStorage {
       updatedGuild = {
         ...updatedGuild,
         gold: updatedGuild.gold + quest.reward,
-        experience: updatedGuild.experience + (quest.difficulty * 50)
+        experience: updatedGuild.experience + (quest.difficulty * 50),
+        reputation: updatedGuild.reputation + (quest.difficulty * 10)
       };
     });
 
@@ -265,7 +281,7 @@ export class GameStorage {
 
     updatedGuild.buildings = updatedBuildings;
 
-    return {
+    let updatedGameData = {
       ...gameData,
       cycle: newCycle,
       activeQuests: stillActiveQuests,
@@ -274,5 +290,10 @@ export class GameStorage {
       characters: updatedCharacters,
       guild: updatedGuild
     };
+
+    // Mettre à jour le pool de quêtes
+    updatedGameData = QuestGenerator.updateQuestPool(updatedGameData);
+
+    return updatedGameData;
   }
 }

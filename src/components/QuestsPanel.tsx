@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Map, Clock, Star, Coins, Users, Skull, Shield, Sword, Crown, Lock, X, Check, AlertTriangle } from 'lucide-react';
+import { Map, Clock, Star, Coins, Users, Skull, Shield, Sword, Crown, Lock, X, Check, AlertTriangle, Sun, Moon } from 'lucide-react';
 import { GameSave, Team, ActiveQuest } from '../types';
 
 interface QuestsPanelProps {
@@ -18,7 +18,7 @@ const QuestsPanel: React.FC<QuestsPanelProps> = ({ gameData, onUpdateGameData })
       title: 'Les Cryptes de Château-Suif',
       description: 'Explorez les cryptes hantées sous l\'ancien château et éliminez le nécromancien qui terrorise la région.',
       difficulty: 4,
-      duration: 240,
+      duration: 8, // 8 cycles (4 jours)
       reward: 1200,
       type: 'Donjon',
       requiredLevel: 5,
@@ -31,7 +31,7 @@ const QuestsPanel: React.FC<QuestsPanelProps> = ({ gameData, onUpdateGameData })
       title: 'Raid Orque sur Pierrehavre',
       description: 'Défendez le paisible village de Pierrehavre contre une horde d\'orques menée par un chef de guerre brutal.',
       difficulty: 3,
-      duration: 180,
+      duration: 6, // 6 cycles (3 jours)
       reward: 800,
       type: 'Combat',
       requiredLevel: 4,
@@ -44,7 +44,7 @@ const QuestsPanel: React.FC<QuestsPanelProps> = ({ gameData, onUpdateGameData })
       title: 'Le Trésor du Dragon Vert',
       description: 'Infiltrez le repaire de Chlorophylle l\'Ancienne et dérobez une partie de son trésor légendaire.',
       difficulty: 5,
-      duration: 360,
+      duration: 12, // 12 cycles (6 jours)
       reward: 2500,
       type: 'Donjon',
       requiredLevel: 7,
@@ -57,7 +57,7 @@ const QuestsPanel: React.FC<QuestsPanelProps> = ({ gameData, onUpdateGameData })
       title: 'Escorte de Caravane',
       description: 'Escortez une caravane marchande à travers les Terres Sauvages infestées de bandits et de monstres.',
       difficulty: 2,
-      duration: 150,
+      duration: 4, // 4 cycles (2 jours)
       reward: 450,
       type: 'Escorte',
       requiredLevel: 3,
@@ -70,7 +70,7 @@ const QuestsPanel: React.FC<QuestsPanelProps> = ({ gameData, onUpdateGameData })
       title: 'Négociation avec les Elfes',
       description: 'Négociez un traité commercial avec les Seigneurs Elfes de la Cour d\'Été dans leur domaine féerique.',
       difficulty: 3,
-      duration: 120,
+      duration: 3, // 3 cycles (1.5 jours)
       reward: 600,
       type: 'Diplomatie',
       requiredLevel: 4,
@@ -83,7 +83,7 @@ const QuestsPanel: React.FC<QuestsPanelProps> = ({ gameData, onUpdateGameData })
       title: 'Purification du Temple Maudit',
       description: 'Purifiez l\'ancien temple de Lathandre souillé par des cultistes de Cyric et leurs démons.',
       difficulty: 4,
-      duration: 210,
+      duration: 7, // 7 cycles (3.5 jours)
       reward: 1000,
       type: 'Religieux',
       requiredLevel: 5,
@@ -96,7 +96,7 @@ const QuestsPanel: React.FC<QuestsPanelProps> = ({ gameData, onUpdateGameData })
       title: 'Contrat de Nettoyage - Rats Géants',
       description: 'Éliminez l\'infestation de rats géants dans les égouts de la ville.',
       difficulty: 1,
-      duration: 90,
+      duration: 2, // 2 cycles (1 jour)
       reward: 200,
       type: 'Nettoyage',
       requiredLevel: 1,
@@ -109,7 +109,7 @@ const QuestsPanel: React.FC<QuestsPanelProps> = ({ gameData, onUpdateGameData })
       title: 'Chasse aux Gobelins',
       description: 'Traquez et éliminez une bande de gobelins qui attaque les fermes locales.',
       difficulty: 2,
-      duration: 120,
+      duration: 3, // 3 cycles (1.5 jours)
       reward: 350,
       type: 'Chasse',
       requiredLevel: 2,
@@ -122,7 +122,7 @@ const QuestsPanel: React.FC<QuestsPanelProps> = ({ gameData, onUpdateGameData })
       title: 'L\'Antre du Liche Ancien',
       description: 'Affrontez un liche millénaire dans son donjon fortifié, gardé par des légions de morts-vivants.',
       difficulty: 5,
-      duration: 480,
+      duration: 16, // 16 cycles (8 jours)
       reward: 5000,
       type: 'Donjon Épique',
       requiredLevel: 10,
@@ -135,7 +135,7 @@ const QuestsPanel: React.FC<QuestsPanelProps> = ({ gameData, onUpdateGameData })
       title: 'Récupération d\'Artefact',
       description: 'Récupérez un artefact magique volé dans une tour de mage abandonnée.',
       difficulty: 3,
-      duration: 180,
+      duration: 5, // 5 cycles (2.5 jours)
       reward: 750,
       type: 'Récupération',
       requiredLevel: 4,
@@ -200,13 +200,21 @@ const QuestsPanel: React.FC<QuestsPanelProps> = ({ gameData, onUpdateGameData })
     ));
   };
 
-  const formatTime = (minutes: number): string => {
-    const hours = Math.floor(minutes / 60);
-    const mins = minutes % 60;
-    if (hours > 0) {
-      return `${hours}h ${mins > 0 ? mins + 'min' : ''}`;
+  const formatCycleTime = (cycles: number): string => {
+    if (cycles === 1) return '1 cycle';
+    
+    const days = Math.floor(cycles / 2);
+    const periods = cycles % 2;
+    
+    if (days > 0) {
+      if (periods === 0) {
+        return `${days} jour${days > 1 ? 's' : ''}`;
+      } else {
+        return `${days} jour${days > 1 ? 's' : ''} et ${periods === 1 ? '1 période' : '2 périodes'}`;
+      }
+    } else {
+      return `${periods} période${periods > 1 ? 's' : ''}`;
     }
-    return `${mins}min`;
   };
 
   // Appliquer les bonus du dirigeant
@@ -292,9 +300,9 @@ const QuestsPanel: React.FC<QuestsPanelProps> = ({ gameData, onUpdateGameData })
       ...selectedQuest,
       status: 'in_progress',
       assignedTeam: selectedTeam,
-      startTime: new Date(),
-      progress: 0,
-      timeRemaining: selectedQuest.duration
+      startCycle: gameData.cycle.totalCycles,
+      cyclesRemaining: selectedQuest.duration,
+      progress: 0
     };
 
     // Mettre à jour le statut de l'équipe
@@ -406,8 +414,11 @@ const QuestsPanel: React.FC<QuestsPanelProps> = ({ gameData, onUpdateGameData })
 
           <div className="grid grid-cols-3 gap-4 mb-4 text-sm">
             <div className="flex items-center space-x-2 text-stone-600">
-              <Clock className="h-4 w-4" />
-              <span>{formatTime(quest.duration)}</span>
+              <div className="flex items-center space-x-1">
+                <Clock className="h-4 w-4" />
+                {gameData.cycle.period === 'day' ? <Sun className="h-3 w-3 text-yellow-500" /> : <Moon className="h-3 w-3 text-blue-500" />}
+              </div>
+              <span>{formatCycleTime(quest.duration)}</span>
             </div>
             <div className="flex items-center space-x-2 text-stone-600">
               <Coins className="h-4 w-4 text-yellow-500" />
@@ -473,6 +484,12 @@ const QuestsPanel: React.FC<QuestsPanelProps> = ({ gameData, onUpdateGameData })
               <Users className="h-4 w-4 text-green-600" />
               <span className="text-green-800 font-medium">{availableTeams.length} équipes disponibles</span>
             </div>
+            <div className="flex items-center space-x-2 bg-blue-100 px-3 py-1 rounded-lg">
+              {gameData.cycle.period === 'day' ? <Sun className="h-4 w-4 text-yellow-600" /> : <Moon className="h-4 w-4 text-blue-600" />}
+              <span className="text-blue-800 font-medium">
+                Jour {gameData.cycle.day} - {gameData.cycle.period === 'day' ? 'Jour' : 'Nuit'}
+              </span>
+            </div>
           </div>
         </div>
       </div>
@@ -518,7 +535,7 @@ const QuestsPanel: React.FC<QuestsPanelProps> = ({ gameData, onUpdateGameData })
             <div>
               <div className="font-medium text-orange-800">Aucune équipe disponible</div>
               <div className="text-orange-700 text-sm">
-                Toutes vos équipes sont actuellement en mission. Attendez qu'elles terminent pour assigner de nouvelles quêtes.
+                Toutes vos équipes sont actuellement en mission. Attendez qu'elles terminent ou faites avancer le temps pour assigner de nouvelles quêtes.
               </div>
             </div>
           </div>
@@ -579,7 +596,10 @@ const QuestsPanel: React.FC<QuestsPanelProps> = ({ gameData, onUpdateGameData })
                       </div>
                       <div>
                         <span className="font-medium text-stone-600">Durée:</span>
-                        <div className="text-stone-800 mt-1">{formatTime(selectedQuest.duration)}</div>
+                        <div className="text-stone-800 mt-1 flex items-center space-x-1">
+                          {gameData.cycle.period === 'day' ? <Sun className="h-3 w-3 text-yellow-500" /> : <Moon className="h-3 w-3 text-blue-500" />}
+                          <span>{formatCycleTime(selectedQuest.duration)}</span>
+                        </div>
                       </div>
                       <div>
                         <span className="font-medium text-stone-600">Récompense:</span>
@@ -763,37 +783,44 @@ const QuestsPanel: React.FC<QuestsPanelProps> = ({ gameData, onUpdateGameData })
 
       {/* Légende des difficultés */}
       <div className="bg-white rounded-xl shadow-lg p-6 border border-stone-200">
-        <h3 className="text-lg font-bold text-stone-800 mb-4">Guide des Difficultés</h3>
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 text-sm">
-          <div className="flex items-center space-x-2">
-            <div className="flex space-x-1">
-              {getDifficultyStars(1)}
+        <h3 className="text-lg font-bold text-stone-800 mb-4">Guide des Difficultés et Cycles</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <h4 className="font-medium text-stone-700 mb-3">Niveaux de difficulté :</h4>
+            <div className="grid grid-cols-1 gap-2 text-sm">
+              {[
+                { stars: 1, label: 'Facile', color: 'text-green-600' },
+                { stars: 2, label: 'Modéré', color: 'text-green-600' },
+                { stars: 3, label: 'Difficile', color: 'text-yellow-600' },
+                { stars: 4, label: 'Très Difficile', color: 'text-orange-600' },
+                { stars: 5, label: 'Légendaire', color: 'text-red-600' }
+              ].map((difficulty) => (
+                <div key={difficulty.stars} className="flex items-center space-x-2">
+                  <div className="flex space-x-1">
+                    {getDifficultyStars(difficulty.stars)}
+                  </div>
+                  <span className={`font-medium ${difficulty.color}`}>{difficulty.label}</span>
+                </div>
+              ))}
             </div>
-            <span className="text-green-600 font-medium">Facile</span>
           </div>
-          <div className="flex items-center space-x-2">
-            <div className="flex space-x-1">
-              {getDifficultyStars(2)}
+          
+          <div>
+            <h4 className="font-medium text-stone-700 mb-3">Système de cycles :</h4>
+            <div className="space-y-2 text-sm text-stone-600">
+              <div className="flex items-center space-x-2">
+                <Sun className="h-4 w-4 text-yellow-500" />
+                <span>1 cycle = 1 période (jour ou nuit)</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Moon className="h-4 w-4 text-blue-500" />
+                <span>2 cycles = 1 jour complet</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Clock className="h-4 w-4 text-stone-500" />
+                <span>Utilisez le bouton dans l'en-tête pour faire avancer le temps</span>
+              </div>
             </div>
-            <span className="text-green-600 font-medium">Modéré</span>
-          </div>
-          <div className="flex items-center space-x-2">
-            <div className="flex space-x-1">
-              {getDifficultyStars(3)}
-            </div>
-            <span className="text-yellow-600 font-medium">Difficile</span>
-          </div>
-          <div className="flex items-center space-x-2">
-            <div className="flex space-x-1">
-              {getDifficultyStars(4)}
-            </div>
-            <span className="text-orange-600 font-medium">Très Difficile</span>
-          </div>
-          <div className="flex items-center space-x-2">
-            <div className="flex space-x-1">
-              {getDifficultyStars(5)}
-            </div>
-            <span className="text-red-600 font-medium">Légendaire</span>
           </div>
         </div>
       </div>

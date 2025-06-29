@@ -240,6 +240,14 @@ function App() {
     GameStorage.saveGame(updatedGameData);
   };
 
+  const handleAdvanceCycle = () => {
+    if (!gameData) return;
+
+    const updatedGameData = GameStorage.advanceCycle(gameData);
+    setGameData(updatedGameData);
+    GameStorage.saveGame(updatedGameData);
+  };
+
   // Obtenir les éléments de navigation déverrouillés
   const unlockedNavigationItems = gameData ? getUnlockedNavigationItems(allNavigationItems, gameData) : [];
   
@@ -307,8 +315,10 @@ function App() {
                   <h3 className="text-lg font-bold text-stone-800 mb-2">Statistiques de Jeu</h3>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="bg-stone-50 rounded-lg p-3 text-center">
-                      <div className="font-bold text-stone-800">{Math.floor(gameData.gameTime / 60)}h {gameData.gameTime % 60}min</div>
-                      <div className="text-stone-600 text-sm">Temps de jeu</div>
+                      <div className="font-bold text-stone-800">Jour {gameData.cycle.day}</div>
+                      <div className="text-stone-600 text-sm">
+                        {gameData.cycle.period === 'day' ? 'Période diurne' : 'Période nocturne'}
+                      </div>
                     </div>
                     <div className="bg-stone-50 rounded-lg p-3 text-center">
                       <div className="font-bold text-stone-800">{gameData.completedQuests.length}</div>
@@ -387,7 +397,7 @@ function App() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-fantasy-50 to-fantasy-100 bg-parchment">
         <div className="flex flex-col h-screen">
-          <Header gameData={gameData} />
+          <Header gameData={gameData} onAdvanceCycle={handleAdvanceCycle} />
           
           <div className="flex flex-1 overflow-hidden">
             <Navigation 

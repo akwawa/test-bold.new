@@ -1,4 +1,4 @@
-import { GameSave, PlayerLeader, Guild, Character, Team, ActiveQuest, Quest } from '../types';
+import { GameSave, PlayerLeader, Guild, Character, Team, ActiveQuest, Quest, GameCycle } from '../types';
 import { playerLeaders } from '../data/playerLeaders';
 import { mockBuildings } from '../data/mockData';
 import { generateRecruitPool } from '../data/recruitableCharacters';
@@ -42,20 +42,54 @@ export class GameStorage {
         }));
       }
 
-      // Reconstituer les dates des quêtes actives
-      if (gameData.activeQuests) {
-        gameData.activeQuests = gameData.activeQuests.map((quest: any) => ({
-          ...quest,
-          startTime: new Date(quest.startTime)
-        }));
+      // Migration du système de temps vers les cycles
+      if (gameData.gameTime !== undefined && !gameData.cycle) {
+        const totalCycles = Math.floor(gameData.gameTime / 30); // 30 minutes = 1 cycle
+        gameData.cycle = {
+          day: Math.floor(totalCycles / 2) + 1,
+          period: totalCycles % 2 === 0 ? 'day' : 'night',
+          totalCycles
+        };
+        delete gameData.gameTime;
       }
 
-      // Reconstituer les dates des bâtiments en amélioration
+      // S'assurer que le cycle existe
+      if (!gameData.cycle) {
+        gameData.cycle = {
+          day: 1,
+          period: 'day',
+          totalCycles: 0
+        };
+      }
+
+      // Migrer les quêtes actives vers le système de cycles
+      if (gameData.activeQuests) {
+        gameData.activeQuests = gameData.activeQuests.map((quest: any) => {
+          if (quest.startTime && !quest.startCycle) {
+            // Migration des anciennes quêtes
+            return {
+              ...quest,
+              startCycle: gameData.cycle.totalCycles,
+              cyclesRemaining: Math.max(1, Math.floor(quest.duration / 30)) // Convertir minutes en cycles
+            };
+          }
+          return quest;
+        });
+      }
+
+      // Migrer les bâtiments en amélioration vers le système de cycles
       if (gameData.guild?.buildings) {
-        gameData.guild.buildings = gameData.guild.buildings.map((building: any) => ({
-          ...building,
-          upgradeStartTime: building.upgradeStartTime ? new Date(building.upgradeStartTime) : undefined
-        }));
+        gameData.guild.buildings = gameData.guild.buildings.map((building: any) => {
+          if (building.upgradeStartTime && !building.upgradeStartCycle) {
+            // Migration des anciens bâtiments
+            return {
+              ...building,
+              upgradeStartCycle: gameData.cycle.totalCycles,
+              upgradeTime: Math.max(1, Math.floor(building.upgradeTime / 30)) // Convertir minutes en cycles
+            };
+          }
+          return building;
+        });
       }
 
       // S'assurer que les recrues sont initialisées
@@ -85,10 +119,13 @@ export class GameStorage {
       throw new Error('Leader non trouvé');
     }
 
-    // Créer les bâtiments de départ
+    // Créer les bâtiments de départ avec des durées en cycles
     const startingBuildings = mockBuildings.filter(building => 
       leader.startingBuildings.includes(building.type)
-    );
+    ).map(building => ({
+      ...building,
+      upgradeTime: Math.max(1, Math.floor(building.upgradeTime / 30)) // Convertir minutes en cycles
+    }));
 
     const guild: Guild = {
       id: 1,
@@ -103,6 +140,12 @@ export class GameStorage {
       currentMembers: 0
     };
 
+    const initialCycle: GameCycle = {
+      day: 1,
+      period: 'day',
+      totalCycles: 0
+    };
+
     const newGame: GameSave = {
       playerId: leaderId,
       playerLeader: leader,
@@ -111,7 +154,7 @@ export class GameStorage {
       teams: [],
       activeQuests: [],
       completedQuests: [],
-      gameTime: 0,
+      cycle: initialCycle,
       lastSave: new Date(),
       achievements: [],
       availableRecruits: generateRecruitPool(),
@@ -122,10 +165,98 @@ export class GameStorage {
   }
 
   static autoSave(gameData: GameSave): void {
-    // Sauvegarde automatique toutes les 30 secondes
-    this.saveGame({
-      ...gameData,
-      gameTime: gameData.gameTime + 0.5 // Ajouter 30 secondes
+    // Sauvegarde automatique
+    this.saveGame(gameData);
+  }
+
+  static advanceCycle(gameData: GameSave): GameSave {
+    const newCycle = { ...gameData.cycle };
+    
+    if (newCycle.period === 'day') {
+      // Passer à la nuit du même jour
+      newCycle.period = 'night';
+    } else {
+      // Passer au jour suivant
+      newCycle.period = 'day';
+      newCycle.day += 1;
+    }
+    
+    newCycle.totalCycles += 1;
+
+    // Mettre à jour les quêtes actives
+    const updatedActiveQuests = gameData.activeQuests.map(quest => {
+      const cyclesRemaining = Math.max(0, quest.cyclesRemaining - 1);
+      const progress = quest.duration > 0 ? 
+        Math.round(((quest.duration - cyclesRemaining) / quest.duration) * 100) : 100;
+      
+      return {
+        ...quest,
+        cyclesRemaining,
+        progress
+      };
     });
+
+    // Terminer les quêtes complétées
+    const completedQuests = updatedActiveQuests.filter(quest => quest.cyclesRemaining <= 0);
+    const stillActiveQuests = updatedActiveQuests.filter(quest => quest.cyclesRemaining > 0);
+
+    // Libérer les équipes et personnages des quêtes terminées
+    let updatedTeams = [...gameData.teams];
+    let updatedCharacters = [...gameData.characters];
+    let updatedGuild = { ...gameData.guild };
+
+    completedQuests.forEach(quest => {
+      // Libérer l'équipe
+      updatedTeams = updatedTeams.map(team => 
+        team.id === quest.assignedTeam.id 
+          ? { ...team, status: 'available' as const }
+          : team
+      );
+
+      // Libérer les personnages
+      quest.assignedTeam.members.forEach(member => {
+        updatedCharacters = updatedCharacters.map(char => 
+          char.id === member.id 
+            ? { ...char, isAvailable: true }
+            : char
+        );
+      });
+
+      // Ajouter les récompenses
+      updatedGuild = {
+        ...updatedGuild,
+        gold: updatedGuild.gold + quest.reward,
+        experience: updatedGuild.experience + (quest.difficulty * 50)
+      };
+    });
+
+    // Mettre à jour les bâtiments en amélioration
+    const updatedBuildings = gameData.guild.buildings.map(building => {
+      if (building.isUpgrading && building.upgradeStartCycle !== undefined) {
+        const cyclesElapsed = newCycle.totalCycles - building.upgradeStartCycle;
+        if (cyclesElapsed >= building.upgradeTime) {
+          // Amélioration terminée
+          return {
+            ...building,
+            level: building.level + 1,
+            isUpgrading: false,
+            upgradeStartCycle: undefined
+          };
+        }
+      }
+      return building;
+    });
+
+    updatedGuild.buildings = updatedBuildings;
+
+    return {
+      ...gameData,
+      cycle: newCycle,
+      activeQuests: stillActiveQuests,
+      completedQuests: [...gameData.completedQuests, ...completedQuests],
+      teams: updatedTeams,
+      characters: updatedCharacters,
+      guild: updatedGuild
+    };
   }
 }

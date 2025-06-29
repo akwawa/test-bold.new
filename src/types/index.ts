@@ -69,7 +69,7 @@ export interface Quest {
   title: string;
   description: string;
   difficulty: number;
-  duration: number; // en minutes
+  duration: number; // en cycles
   reward: number;
   type: string;
   requiredLevel: number;
@@ -82,9 +82,9 @@ export interface Quest {
 export interface ActiveQuest extends Quest {
   status: 'in_progress';
   assignedTeam: Team;
-  startTime: Date;
+  startCycle: number; // Cycle de début
+  cyclesRemaining: number; // Cycles restants
   progress: number;
-  timeRemaining: number; // en minutes
 }
 
 export interface Building {
@@ -96,9 +96,9 @@ export interface Building {
   description: string;
   benefits: string[];
   upgradeCost: number;
-  upgradeTime: number; // en minutes
+  upgradeTime: number; // en cycles
   isUpgrading: boolean;
-  upgradeStartTime?: Date;
+  upgradeStartCycle?: number;
   icon: string;
 }
 
@@ -147,6 +147,13 @@ export interface RecruitableCharacter extends Omit<Character, 'id' | 'joinDate' 
   rarity: 'common' | 'rare' | 'epic' | 'legendary';
 }
 
+// Nouveau système de cycles
+export interface GameCycle {
+  day: number; // Numéro du jour (commence à 1)
+  period: 'day' | 'night'; // Période actuelle
+  totalCycles: number; // Nombre total de cycles écoulés
+}
+
 export interface GameSave {
   playerId: string;
   playerLeader: PlayerLeader;
@@ -155,7 +162,7 @@ export interface GameSave {
   teams: Team[];
   activeQuests: ActiveQuest[];
   completedQuests: Quest[];
-  gameTime: number; // temps de jeu en minutes
+  cycle: GameCycle; // Remplace gameTime
   lastSave: Date;
   achievements: string[];
   availableRecruits: RecruitableCharacter[]; // Personnages disponibles au recrutement

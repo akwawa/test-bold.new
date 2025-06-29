@@ -1,5 +1,5 @@
 import React from 'react';
-import { Users, Map, Trophy, Clock, Sword, Lock, ArrowRight } from 'lucide-react';
+import { Users, Map, Trophy, Clock, Sword, Lock, ArrowRight, Sun, Moon } from 'lucide-react';
 import { GameSave } from '../types';
 import ActiveQuestCard from './ActiveQuestCard';
 import CharacterCard from './CharacterCard';
@@ -61,6 +61,18 @@ const OverviewPanel: React.FC<OverviewPanelProps> = ({ onViewCharacterDetails, g
 
   const progressTips = getProgressTips();
 
+  const getCycleIcon = () => {
+    return gameData.cycle.period === 'day' ? 
+      <Sun className="h-12 w-12 text-yellow-400" /> : 
+      <Moon className="h-12 w-12 text-blue-400" />;
+  };
+
+  const getCycleColor = () => {
+    return gameData.cycle.period === 'day' ? 
+      'from-yellow-500 to-orange-600' : 
+      'from-blue-500 to-purple-600';
+  };
+
   return (
     <div className="p-6">
       <div className="mb-6">
@@ -68,7 +80,21 @@ const OverviewPanel: React.FC<OverviewPanelProps> = ({ onViewCharacterDetails, g
         <p className="text-stone-600 mt-2">Gérez vos équipes et suivez vos quêtes</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
+        {/* Indicateur de cycle */}
+        <div className={`bg-gradient-to-br ${getCycleColor()} rounded-xl p-6 text-white shadow-lg`}>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-white/80 text-sm">Cycle Actuel</p>
+              <p className="text-2xl font-bold">Jour {gameData.cycle.day}</p>
+              <p className="text-white/90 text-sm">
+                {gameData.cycle.period === 'day' ? 'Période diurne' : 'Période nocturne'}
+              </p>
+            </div>
+            {getCycleIcon()}
+          </div>
+        </div>
+
         <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-6 text-white shadow-lg">
           <div className="flex items-center justify-between">
             <div>
@@ -140,7 +166,7 @@ const OverviewPanel: React.FC<OverviewPanelProps> = ({ onViewCharacterDetails, g
         {gameData.activeQuests.length > 0 ? (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {gameData.activeQuests.map((quest) => (
-              <ActiveQuestCard key={quest.id} quest={quest} />
+              <ActiveQuestCard key={quest.id} quest={quest} currentCycle={gameData.cycle} />
             ))}
           </div>
         ) : (

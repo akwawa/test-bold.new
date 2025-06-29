@@ -166,7 +166,8 @@ export interface GameSave {
   lastSave: Date;
   achievements: string[];
   availableRecruits: RecruitableCharacter[]; // Personnages disponibles au recrutement
-  lastRecruitRefresh: Date; // Dernière actualisation des recrues
+  lastRecruitRefresh: Date; // Dernière actualisation des recrues (legacy)
+  lastRecruitRefreshCycle?: number; // Cycle de la dernière actualisation des recrues
 }
 
 // Nouvelles interfaces pour le système de progression

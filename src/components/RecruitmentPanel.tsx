@@ -1,5 +1,5 @@
 import React from 'react';
-import { Users, Coins, Star, Sword, Brain, Activity, Heart, RefreshCw, UserPlus } from 'lucide-react';
+import { Users, Coins, Star, Sword, Brain, Activity, Heart, RefreshCw, UserPlus, Sun, Moon } from 'lucide-react';
 import { GameSave, RecruitableCharacter } from '../types';
 import { generateRecruitPool } from '../data/recruitableCharacters';
 
@@ -85,12 +85,34 @@ const RecruitmentPanel: React.FC<RecruitmentPanelProps> = ({ gameData, onRecruit
     return gameData.guild.currentMembers < gameData.guild.maxMembers;
   };
 
-  const timeSinceLastRefresh = gameData.lastRecruitRefresh 
-    ? Math.floor((Date.now() - gameData.lastRecruitRefresh.getTime()) / (1000 * 60 * 60))
-    : 24;
+  // Calculer les cycles depuis la dernière actualisation
+  const cyclesSinceLastRefresh = gameData.lastRecruitRefreshCycle !== undefined 
+    ? gameData.cycle.totalCycles - gameData.lastRecruitRefreshCycle
+    : 48; // Si pas défini, considérer comme étant il y a 48 cycles (24 jours)
 
-  const canRefresh = timeSinceLastRefresh >= 24;
+  const canRefresh = cyclesSinceLastRefresh >= 48; // 48 cycles = 24 jours complets
   const refreshCost = 50;
+
+  const formatCyclesUntilRefresh = (cycles: number): string => {
+    const days = Math.floor(cycles / 2);
+    const periods = cycles % 2;
+    
+    if (days > 0) {
+      if (periods === 0) {
+        return `${days} jour${days > 1 ? 's' : ''}`;
+      } else {
+        return `${days} jour${days > 1 ? 's' : ''} et ${periods === 1 ? '1 période' : '2 périodes'}`;
+      }
+    } else {
+      return `${periods} période${periods > 1 ? 's' : ''}`;
+    }
+  };
+
+  const getCycleIcon = () => {
+    return gameData.cycle.period === 'day' ? 
+      <Sun className="h-4 w-4 text-yellow-500" /> : 
+      <Moon className="h-4 w-4 text-blue-500" />;
+  };
 
   return (
     <div className="p-6">
@@ -106,6 +128,13 @@ const RecruitmentPanel: React.FC<RecruitmentPanelProps> = ({ gameData, onRecruit
             <div className="text-xl font-bold text-stone-800">
               {gameData.guild.currentMembers}/{gameData.guild.maxMembers}
             </div>
+          </div>
+          
+          <div className="flex items-center space-x-2 bg-blue-100 px-3 py-1 rounded-lg">
+            {getCycleIcon()}
+            <span className="text-blue-800 font-medium text-sm">
+              Jour {gameData.cycle.day} - {gameData.cycle.period === 'day' ? 'Jour' : 'Nuit'}
+            </span>
           </div>
           
           <button
@@ -133,9 +162,11 @@ const RecruitmentPanel: React.FC<RecruitmentPanelProps> = ({ gameData, onRecruit
             <div className="text-blue-600">ℹ️</div>
             <div>
               <div className="font-medium text-blue-800">Actualisation automatique</div>
-              <div className="text-blue-700 text-sm">
-                Nouveaux aventuriers disponibles dans {24 - timeSinceLastRefresh} heures, 
-                ou payez {refreshCost} po pour actualiser maintenant.
+              <div className="text-blue-700 text-sm flex items-center space-x-1">
+                <span>Nouveaux aventuriers disponibles dans</span>
+                {getCycleIcon()}
+                <span>{formatCyclesUntilRefresh(48 - cyclesSinceLastRefresh)},</span>
+                <span>ou payez {refreshCost} po pour actualiser maintenant.</span>
               </div>
             </div>
           </div>
@@ -267,6 +298,19 @@ const RecruitmentPanel: React.FC<RecruitmentPanelProps> = ({ gameData, onRecruit
           </button>
         </div>
       )}
+
+      {/* Informations sur le système de cycles */}
+      <div className="mt-6 bg-gradient-to-r from-blue-50 to-blue-100 rounded-xl p-4 border border-blue-200">
+        <h4 className="font-bold text-blue-800 mb-2 flex items-center space-x-2">
+          {getCycleIcon()}
+          <span>Système d'Actualisation</span>
+        </h4>
+        <div className="text-sm text-blue-700">
+          <div>• Actualisation automatique gratuite toutes les 48 cycles (24 jours complets)</div>
+          <div>• Actualisation manuelle possible pour {refreshCost} po</div>
+          <div>• Cycle actuel : Jour {gameData.cycle.day} - {gameData.cycle.period === 'day' ? 'Période diurne' : 'Période nocturne'}</div>
+        </div>
+      </div>
 
       {/* Bonus du dirigeant pour le recrutement */}
       {(gameData.playerLeader.bonuses.some(b => b.type === 'recruitment') || 

@@ -106,6 +106,7 @@ function App() {
       if (!savedGame.availableRecruits || savedGame.availableRecruits.length === 0) {
         savedGame.availableRecruits = generateRecruitPool();
         savedGame.lastRecruitRefresh = new Date();
+        savedGame.lastRecruitRefreshCycle = savedGame.cycle.totalCycles;
       }
       setGameData(savedGame);
       setGameState('playing');
@@ -127,6 +128,7 @@ function App() {
       // Initialiser les recrues disponibles
       newGame.availableRecruits = generateRecruitPool();
       newGame.lastRecruitRefresh = new Date();
+      newGame.lastRecruitRefreshCycle = 0;
       
       GameStorage.saveGame(newGame);
       setGameData(newGame);
@@ -209,11 +211,11 @@ function App() {
   const handleRefreshRecruits = () => {
     if (!gameData) return;
 
-    const timeSinceLastRefresh = gameData.lastRecruitRefresh 
-      ? Math.floor((Date.now() - gameData.lastRecruitRefresh.getTime()) / (1000 * 60 * 60))
-      : 24;
+    const cyclesSinceLastRefresh = gameData.lastRecruitRefreshCycle !== undefined 
+      ? gameData.cycle.totalCycles - gameData.lastRecruitRefreshCycle
+      : 48;
 
-    const canRefreshFree = timeSinceLastRefresh >= 24;
+    const canRefreshFree = cyclesSinceLastRefresh >= 48; // 48 cycles = 24 jours complets
     const refreshCost = 50;
 
     if (!canRefreshFree && gameData.guild.gold < refreshCost) {
@@ -225,6 +227,7 @@ function App() {
       ...gameData,
       availableRecruits: generateRecruitPool(),
       lastRecruitRefresh: new Date(),
+      lastRecruitRefreshCycle: gameData.cycle.totalCycles,
       guild: {
         ...gameData.guild,
         gold: canRefreshFree ? gameData.guild.gold : gameData.guild.gold - refreshCost

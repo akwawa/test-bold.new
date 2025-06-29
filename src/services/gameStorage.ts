@@ -62,6 +62,20 @@ export class GameStorage {
         };
       }
 
+      // Migration du système de recrutement vers les cycles
+      if (gameData.lastRecruitRefresh && !gameData.lastRecruitRefreshCycle) {
+        // Estimer le cycle basé sur la différence de temps
+        const timeDiff = Date.now() - gameData.lastRecruitRefresh.getTime();
+        const hoursDiff = Math.floor(timeDiff / (1000 * 60 * 60));
+        const cyclesDiff = Math.floor(hoursDiff / 12); // 12 heures = 1 cycle approximativement
+        gameData.lastRecruitRefreshCycle = Math.max(0, gameData.cycle.totalCycles - cyclesDiff);
+      }
+
+      // S'assurer que lastRecruitRefreshCycle existe
+      if (gameData.lastRecruitRefreshCycle === undefined) {
+        gameData.lastRecruitRefreshCycle = gameData.cycle.totalCycles;
+      }
+
       // Migrer les quêtes actives vers le système de cycles
       if (gameData.activeQuests) {
         gameData.activeQuests = gameData.activeQuests.map((quest: any) => {
@@ -96,6 +110,7 @@ export class GameStorage {
       if (!gameData.availableRecruits) {
         gameData.availableRecruits = generateRecruitPool();
         gameData.lastRecruitRefresh = new Date();
+        gameData.lastRecruitRefreshCycle = gameData.cycle.totalCycles;
       }
 
       return gameData;
@@ -158,7 +173,8 @@ export class GameStorage {
       lastSave: new Date(),
       achievements: [],
       availableRecruits: generateRecruitPool(),
-      lastRecruitRefresh: new Date()
+      lastRecruitRefresh: new Date(),
+      lastRecruitRefreshCycle: 0
     };
 
     return newGame;

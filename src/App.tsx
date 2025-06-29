@@ -267,7 +267,7 @@ function App() {
       case 'teams':
         return <TeamsPanel gameData={gameData} onUpdateGameData={handleUpdateGameData} />;
       case 'quests':
-        return <QuestsPanel gameData={gameData} />;
+        return <QuestsPanel gameData={gameData} onUpdateGameData={handleUpdateGameData} />;
       case 'recruitment':
         return (
           <RecruitmentPanel 
